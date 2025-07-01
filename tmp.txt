@@ -181,3 +181,82 @@ Traceback (most recent call last):
   File "/home/pyhou/miniconda3/envs/vllm/lib/python3.12/site-packages/vllm/v1/utils.py", line 494, in wait_for_engine_startup
     raise RuntimeError("Engine core initialization failed. "
 RuntimeError: Engine core initialization failed. See root cause above. Failed core proc(s): {}
+
+
+
+
+# 启动服务（默认开启思考模式）
+vllm serve Qwen/Qwen3-8B \
+  --enable-reasoning \          # 启用思考模式能力
+  --reasoning-parser deepseek_r1 \  # 指定解析器
+  --port 8000 \                 # 服务端口
+  --max-model-len 8192          # 最大上下文长度
+
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="http://localhost:8000/v1",  # vLLM 服务地址
+    api_key="EMPTY"  # vLLM 无需认证
+)
+
+# 启用思考模式
+response_thinking = client.chat.completions.create(
+    model="Qwen/Qwen3-8B",
+    messages=[{"role": "user", "content": "三人三台三桶水，九人九天几桶水？"}],
+    extra_body={
+        "chat_template_kwargs": {"enable_thinking": True}  # True启用思考
+    }
+)
+
+# 禁用思考模式
+response_no_thinking = client.chat.completions.create(
+    model="Qwen/Qwen3-8B",
+    messages=[{"role": "user", "content": "《[红楼梦](@replace=10001)》的作者是谁？"}],
+    extra_body={
+        "chat_template_kwargs": {"enable_thinking": False}  # False关闭思考
+    }
+)
+
+# 在用户输入后添加指令
+response_direct = client.chat.completions.create(
+    model="Qwen/Qwen3-8B",
+    messages=[{
+        "role": "user", 
+        "content": "用牛顿法求平方根的算法步骤 /no_think"  # 添加指令
+    }]
+)
+
+def test_thinking_modes():
+    # 测试问题集
+    prompts = [
+        "三人三台三桶水，九人九天几桶水？",
+        "用Python实现快速排序算法",
+        "《[三国演义](@replace=10002)》中诸葛亮的主要事迹有哪些？"
+    ]
+    
+    # 测试不同模式
+    for idx, prompt in enumerate(prompts):
+        print(f"\n=== 测试问题 {idx+1} ===")
+        print(f">> 问题: {prompt}")
+        
+        # 思考模式测试
+        thinking_res = client.chat.completions.create(
+            model="Qwen/Qwen3-8B",
+            messages=[{"role": "user", "content": prompt}],
+            extra_body={"chat_template_kwargs": {"enable_thinking": True}},
+            max_tokens=1024
+        )
+        print("\n[思考模式答案]:")
+        print(thinking_res.choices[0].message.content)
+        
+        # 非思考模式测试
+        no_thinking_res = client.chat.completions.create(
+            model="Qwen/Qwen3-8B",
+            messages=[{"role": "user", "content": prompt + " /no_think"}],  # 指令方式
+            max_tokens=512
+        )
+        print("\n[非思考模式答案]:")
+        print(no_thinking_res.choices[0].message.content)
+
+# 执行测试
+test_thinking_modes()
