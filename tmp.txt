@@ -1,0 +1,18 @@
+(vllm_l)  ✘  🐍 vllm_l  pyhou@iZ1pp01kqmxkri7zpk8ionZ  /mnt/data/Llmei/data/public_sft  gcc --version
+gcc (Ubuntu 11.4.0-1ubuntu1~22.04) 11.4.0
+Copyright (C) 2021 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+(vllm_l)  🐍 vllm_l  pyhou@iZ1pp01kqmxkri7zpk8ionZ  /mnt/data/Llmei/data/public_sft  pip list | grep -E 'vllm|torch|triton'
+torch                                    2.7.0
+torchaudio                               2.7.0
+torchvision                              0.22.0
+triton                                   3.3.0
+vllm                                     0.9.1
+(vllm_l)  🐍 vllm_l  pyhou@iZ1pp01kqmxkri7zpk8ionZ  /mnt/data/Llmei/data/public_sft  python                                
+Python 3.10.0 (default, Mar  3 2022, 09:58:08) [GCC 7.5.0] on linux
+Type "help", "copyright", "credits" or "license" for more information.
+>>> exit()
+
+RuntimeError: Worker failed with error 'CalledProcessError: Command '['/usr/bin/gcc', '/tmp/tmplvqg2aqo/main.c', '-O3', '-shared', '-fPIC', '-Wno-psabi', '-o', '/tmp/tmplvqg2aqo/cuda_utils.cpython-310-x86_64-linux-gnu.so', '-lcuda', '-L/home/pyhou/miniconda3/envs/vllm_l/lib/python3.10/site-packages/triton/backends/nvidia/lib', '-L/usr/lib', '-L/usr/lib/x86_64-linux-gnu', '-I/home/pyhou/miniconda3/envs/vllm_l/lib/python3.10/site-packages/triton/backends/nvidia/include', '-I/tmp/tmplvqg2aqo', '-I/home/pyhou/miniconda3/envs/vllm_l/include/python3.10']' returned non-zero exit status 1.
