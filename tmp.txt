@@ -1,18 +1,183 @@
-(vllm_l)  ✘  🐍 vllm_l  pyhou@iZ1pp01kqmxkri7zpk8ionZ  /mnt/data/Llmei/data/public_sft  gcc --version
+(vllm) (base)  ✘  🐍 vllm  pyhou@iZ1pp01kqmxkri7zpk8ionZ  ~/projects/evalscope   main  pip list | grep -E 'vllm|torch|triton'
+torch                                    2.7.0+cu128
+torchaudio                               2.7.0+cu128
+torchvision                              0.22.0+cu128
+triton                                   3.3.0
+vllm                                     0.9.1
+(vllm) (base)  🐍 vllm  pyhou@iZ1pp01kqmxkri7zpk8ionZ  ~/projects/evalscope   main  nvcc -V                               
+nvcc: NVIDIA (R) Cuda compiler driver
+Copyright (c) 2005-2024 NVIDIA Corporation
+Built on Tue_Oct_29_23:50:19_PDT_2024
+Cuda compilation tools, release 12.6, V12.6.85
+Build cuda_12.6.r12.6/compiler.35059454_0
+(vllm) (base)  🐍 vllm  pyhou@iZ1pp01kqmxkri7zpk8ionZ  ~/projects/evalscope   main  gcc --version  
 gcc (Ubuntu 11.4.0-1ubuntu1~22.04) 11.4.0
 Copyright (C) 2021 Free Software Foundation, Inc.
 This is free software; see the source for copying conditions.  There is NO
 warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-(vllm_l)  🐍 vllm_l  pyhou@iZ1pp01kqmxkri7zpk8ionZ  /mnt/data/Llmei/data/public_sft  pip list | grep -E 'vllm|torch|triton'
-torch                                    2.7.0
-torchaudio                               2.7.0
-torchvision                              0.22.0
-triton                                   3.3.0
-vllm                                     0.9.1
-(vllm_l)  🐍 vllm_l  pyhou@iZ1pp01kqmxkri7zpk8ionZ  /mnt/data/Llmei/data/public_sft  python                                
-Python 3.10.0 (default, Mar  3 2022, 09:58:08) [GCC 7.5.0] on linux
-Type "help", "copyright", "credits" or "license" for more information.
->>> exit()
 
-RuntimeError: Worker failed with error 'CalledProcessError: Command '['/usr/bin/gcc', '/tmp/tmplvqg2aqo/main.c', '-O3', '-shared', '-fPIC', '-Wno-psabi', '-o', '/tmp/tmplvqg2aqo/cuda_utils.cpython-310-x86_64-linux-gnu.so', '-lcuda', '-L/home/pyhou/miniconda3/envs/vllm_l/lib/python3.10/site-packages/triton/backends/nvidia/lib', '-L/usr/lib', '-L/usr/lib/x86_64-linux-gnu', '-I/home/pyhou/miniconda3/envs/vllm_l/lib/python3.10/site-packages/triton/backends/nvidia/include', '-I/tmp/tmplvqg2aqo', '-I/home/pyhou/miniconda3/envs/vllm_l/include/python3.10']' returned non-zero exit status 1.
+from vllm import LLM, SamplingParams
+prompts = ['hello, Nihao']
+sampling_params = SamplingParams(temperature=0.8, top_p=0.95)
+llm = LLM(model="facebook/opt-125m")
+
+outputs = llm.generate(prompts, sampling_params)
+for output in outputs:
+    print(output.outputs[0].text)
+
+Traceback (most recent call last):
+  File "/home/pyhou/miniconda3/envs/vllm/lib/python3.12/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+  File "/home/pyhou/miniconda3/envs/vllm/lib/python3.12/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/home/pyhou/miniconda3/envs/vllm/lib/python3.12/site-packages/vllm/v1/engine/core.py", line 519, in run_engine_core
+    raise e
+  File "/home/pyhou/miniconda3/envs/vllm/lib/python3.12/site-packages/vllm/v1/engine/core.py", line 506, in run_engine_core
+    engine_core = EngineCoreProc(*args, **kwargs)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/pyhou/miniconda3/envs/vllm/lib/python3.12/site-packages/vllm/v1/engine/core.py", line 390, in __init__
+    super().__init__(vllm_config, executor_class, log_stats,
+  File "/home/pyhou/miniconda3/envs/vllm/lib/python3.12/site-packages/vllm/v1/engine/core.py", line 83, in __init__
+    self._initialize_kv_caches(vllm_config)
+  File "/home/pyhou/miniconda3/envs/vllm/lib/python3.12/site-packages/vllm/v1/engine/core.py", line 141, in _initialize_kv_caches
+    available_gpu_memory = self.model_executor.determine_available_memory()
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/pyhou/miniconda3/envs/vllm/lib/python3.12/site-packages/vllm/v1/executor/abstract.py", line 76, in determine_available_memory
+    output = self.collective_rpc("determine_available_memory")
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/pyhou/miniconda3/envs/vllm/lib/python3.12/site-packages/vllm/executor/uniproc_executor.py", line 57, in collective_rpc
+    answer = run_method(self.driver_worker, method, args, kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/pyhou/miniconda3/envs/vllm/lib/python3.12/site-packages/vllm/utils.py", line 2671, in run_method
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/pyhou/miniconda3/envs/vllm/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 116, in decorate_context
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/pyhou/miniconda3/envs/vllm/lib/python3.12/site-packages/vllm/v1/worker/gpu_worker.py", line 205, in determine_available_memory
+    self.model_runner.profile_run()
+  File "/home/pyhou/miniconda3/envs/vllm/lib/python3.12/site-packages/vllm/v1/worker/gpu_model_runner.py", line 2012, in profile_run
+    hidden_states = self._dummy_run(self.max_num_tokens)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/pyhou/miniconda3/envs/vllm/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 116, in decorate_context
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/pyhou/miniconda3/envs/vllm/lib/python3.12/site-packages/vllm/v1/worker/gpu_model_runner.py", line 1847, in _dummy_run
+    outputs = model(
+              ^^^^^^
+  File "/home/pyhou/miniconda3/envs/vllm/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1751, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/pyhou/miniconda3/envs/vllm/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1762, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/pyhou/miniconda3/envs/vllm/lib/python3.12/site-packages/vllm/model_executor/models/opt.py", line 392, in forward
+    hidden_states = self.model(input_ids, positions, intermediate_tensors,
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/pyhou/miniconda3/envs/vllm/lib/python3.12/site-packages/vllm/compilation/decorators.py", line 239, in __call__
+    output = self.compiled_callable(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/pyhou/miniconda3/envs/vllm/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py", line 663, in _fn
+    raise e.remove_dynamo_frames() from None  # see TORCHDYNAMO_VERBOSE=1
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/pyhou/miniconda3/envs/vllm/lib/python3.12/site-packages/torch/_inductor/compile_fx.py", line 760, in _compile_fx_inner
+    raise InductorError(e, currentframe()).with_traceback(
+  File "/home/pyhou/miniconda3/envs/vllm/lib/python3.12/site-packages/torch/_inductor/compile_fx.py", line 745, in _compile_fx_inner
+    mb_compiled_graph = fx_codegen_and_compile(
+                        ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/pyhou/miniconda3/envs/vllm/lib/python3.12/site-packages/torch/_inductor/compile_fx.py", line 1295, in fx_codegen_and_compile
+    return scheme.codegen_and_compile(gm, example_inputs, inputs_to_check, graph_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/pyhou/miniconda3/envs/vllm/lib/python3.12/site-packages/torch/_inductor/compile_fx.py", line 1197, in codegen_and_compile
+    compiled_fn = graph.compile_to_module().call
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/pyhou/miniconda3/envs/vllm/lib/python3.12/site-packages/torch/_inductor/graph.py", line 2083, in compile_to_module
+    return self._compile_to_module()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/pyhou/miniconda3/envs/vllm/lib/python3.12/site-packages/torch/_inductor/graph.py", line 2091, in _compile_to_module
+    self.codegen_with_cpp_wrapper() if self.cpp_wrapper else self.codegen()
+                                                             ^^^^^^^^^^^^^^
+  File "/home/pyhou/miniconda3/envs/vllm/lib/python3.12/site-packages/torch/_inductor/graph.py", line 2002, in codegen
+    self.scheduler.codegen()
+  File "/home/pyhou/miniconda3/envs/vllm/lib/python3.12/site-packages/torch/_inductor/scheduler.py", line 4135, in codegen
+    else self._codegen(self.nodes)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/pyhou/miniconda3/envs/vllm/lib/python3.12/site-packages/torch/_inductor/scheduler.py", line 4264, in _codegen
+    self.get_backend(device).codegen_node(node)
+  File "/home/pyhou/miniconda3/envs/vllm/lib/python3.12/site-packages/torch/_inductor/codegen/cuda_combined_scheduling.py", line 104, in codegen_node
+    return self._triton_scheduling.codegen_node(node)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/pyhou/miniconda3/envs/vllm/lib/python3.12/site-packages/torch/_inductor/codegen/simd.py", line 1320, in codegen_node
+    return self.codegen_node_schedule(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/pyhou/miniconda3/envs/vllm/lib/python3.12/site-packages/torch/_inductor/codegen/simd.py", line 1365, in codegen_node_schedule
+    src_code = kernel.codegen_kernel()
+               ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/pyhou/miniconda3/envs/vllm/lib/python3.12/site-packages/torch/_inductor/codegen/triton.py", line 3623, in codegen_kernel
+    **self.inductor_meta_common(),
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/pyhou/miniconda3/envs/vllm/lib/python3.12/site-packages/torch/_inductor/codegen/triton.py", line 3447, in inductor_meta_common
+    "backend_hash": torch.utils._triton.triton_hash_with_backend(),
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/pyhou/miniconda3/envs/vllm/lib/python3.12/site-packages/torch/utils/_triton.py", line 111, in triton_hash_with_backend
+    backend = triton_backend()
+              ^^^^^^^^^^^^^^^^
+  File "/home/pyhou/miniconda3/envs/vllm/lib/python3.12/site-packages/torch/utils/_triton.py", line 103, in triton_backend
+    target = driver.active.get_current_target()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/pyhou/miniconda3/envs/vllm/lib/python3.12/site-packages/triton/runtime/driver.py", line 23, in __getattr__
+    self._initialize_obj()
+  File "/home/pyhou/miniconda3/envs/vllm/lib/python3.12/site-packages/triton/runtime/driver.py", line 20, in _initialize_obj
+    self._obj = self._init_fn()
+                ^^^^^^^^^^^^^^^
+  File "/home/pyhou/miniconda3/envs/vllm/lib/python3.12/site-packages/triton/runtime/driver.py", line 9, in _create_driver
+    return actives[0]()
+           ^^^^^^^^^^^^
+  File "/home/pyhou/miniconda3/envs/vllm/lib/python3.12/site-packages/triton/backends/nvidia/driver.py", line 535, in __init__
+    self.utils = CudaUtils()  # TODO: make static
+                 ^^^^^^^^^^^
+  File "/home/pyhou/miniconda3/envs/vllm/lib/python3.12/site-packages/triton/backends/nvidia/driver.py", line 89, in __init__
+    mod = compile_module_from_src(Path(os.path.join(dirname, "driver.c")).read_text(), "cuda_utils")
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/pyhou/miniconda3/envs/vllm/lib/python3.12/site-packages/triton/backends/nvidia/driver.py", line 66, in compile_module_from_src
+    so = _build(name, src_path, tmpdir, library_dirs(), include_dir, libraries)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/pyhou/miniconda3/envs/vllm/lib/python3.12/site-packages/triton/runtime/build.py", line 36, in _build
+    subprocess.check_call(cc_cmd, stdout=subprocess.DEVNULL)
+  File "/home/pyhou/miniconda3/envs/vllm/lib/python3.12/subprocess.py", line 413, in check_call
+    raise CalledProcessError(retcode, cmd)
+torch._inductor.exc.InductorError: CalledProcessError: Command '['/usr/bin/gcc', '/tmp/tmpmnor8i0v/main.c', '-O3', '-shared', '-fPIC', '-Wno-psabi', '-o', '/tmp/tmpmnor8i0v/cuda_utils.cpython-312-x86_64-linux-gnu.so', '-lcuda', '-L/home/pyhou/miniconda3/envs/vllm/lib/python3.12/site-packages/triton/backends/nvidia/lib', '-L/usr/lib', '-L/usr/lib/x86_64-linux-gnu', '-I/home/pyhou/miniconda3/envs/vllm/lib/python3.12/site-packages/triton/backends/nvidia/include', '-I/tmp/tmpmnor8i0v', '-I/home/pyhou/miniconda3/envs/vllm/include/python3.12']' returned non-zero exit status 1.
+
+Set TORCHDYNAMO_VERBOSE=1 for the internal stack trace (please do this especially if you're reporting a bug to PyTorch). For even more developer context, set TORCH_LOGS="+dynamo"
+
+Traceback (most recent call last):
+  File "/home/pyhou/projects/evalscope/test.py", line 4, in <module>
+    llm = LLM(model="facebook/opt-125m")
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/pyhou/miniconda3/envs/vllm/lib/python3.12/site-packages/vllm/entrypoints/llm.py", line 243, in __init__
+    self.llm_engine = LLMEngine.from_engine_args(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/pyhou/miniconda3/envs/vllm/lib/python3.12/site-packages/vllm/engine/llm_engine.py", line 501, in from_engine_args
+    return engine_cls.from_vllm_config(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/pyhou/miniconda3/envs/vllm/lib/python3.12/site-packages/vllm/v1/engine/llm_engine.py", line 124, in from_vllm_config
+    return cls(vllm_config=vllm_config,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/pyhou/miniconda3/envs/vllm/lib/python3.12/site-packages/vllm/v1/engine/llm_engine.py", line 101, in __init__
+    self.engine_core = EngineCoreClient.make_client(
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/pyhou/miniconda3/envs/vllm/lib/python3.12/site-packages/vllm/v1/engine/core_client.py", line 75, in make_client
+    return SyncMPClient(vllm_config, executor_class, log_stats)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/pyhou/miniconda3/envs/vllm/lib/python3.12/site-packages/vllm/v1/engine/core_client.py", line 558, in __init__
+    super().__init__(
+  File "/home/pyhou/miniconda3/envs/vllm/lib/python3.12/site-packages/vllm/v1/engine/core_client.py", line 422, in __init__
+    self._init_engines_direct(vllm_config, local_only,
+  File "/home/pyhou/miniconda3/envs/vllm/lib/python3.12/site-packages/vllm/v1/engine/core_client.py", line 491, in _init_engines_direct
+    self._wait_for_engine_startup(handshake_socket, input_address,
+  File "/home/pyhou/miniconda3/envs/vllm/lib/python3.12/site-packages/vllm/v1/engine/core_client.py", line 511, in _wait_for_engine_startup
+    wait_for_engine_startup(
+  File "/home/pyhou/miniconda3/envs/vllm/lib/python3.12/site-packages/vllm/v1/utils.py", line 494, in wait_for_engine_startup
+    raise RuntimeError("Engine core initialization failed. "
+RuntimeError: Engine core initialization failed. See root cause above. Failed core proc(s): {}
