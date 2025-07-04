@@ -1,53 +1,190 @@
-07/04 11:35:32 - OpenCompass - INFO - Task [Qwen3-8B/openai_humaneval]
-07/04 11:35:36 - OpenCompass - WARNING - Max Completion tokens for /mnt/data/Llmei/data/Qwen/Qwen3-8B is :16384
+2025-07-04 11:43:13,446 - evalscope - INFO - Args: Task config is provided with dictionary type.
+2025-07-04 11:43:13,449 - evalscope - INFO - Check the OpenCompass environment: OK
+2025-07-04 11:43:13,449 - evalscope - INFO - Dump task config to ./outputs/20250704_114313/configs/task_config_742719.yaml
+2025-07-04 11:43:13,453 - evalscope - INFO - {
+    "model": "DummyCustomModel",
+    "model_id": "custom_model",
+    "model_args": {},
+    "model_task": "text_generation",
+    "template_type": null,
+    "chat_template": null,
+    "datasets": [],
+    "dataset_args": {},
+    "dataset_dir": "/home/pyhou/.cache/modelscope/datasets",
+    "dataset_hub": "modelscope",
+    "generation_config": {},
+    "eval_type": "custom",
+    "eval_backend": "OpenCompass",
+    "eval_config": {
+        "datasets": [
+            "humaneval"
+        ],
+        "models": [
+            {
+                "abbr": "Qwen3-8B",
+                "type": "opencompass.models.OpenAIExtra",
+                "path": "/mnt/data/Llmei/data/Qwen/Qwen3-8B",
+                "key": "",
+                "openai_api_base": "http://127.0.0.1:9160/v1/chat/completions",
+                "meta_template": {
+                    "round": [
+                        {
+                            "role": "HUMAN",
+                            "api_role": "HUMAN"
+                        },
+                        {
+                            "role": "BOT",
+                            "api_role": "BOT",
+                            "generate": true
+                        }
+                    ]
+                },
+                "query_per_second": 8,
+                "batch_size": 128,
+                "temperature": 0.6,
+                "max_out_len": 16384,
+                "max_seq_len": 32768,
+                "is_chat": true
+            }
+        ],
+        "work_dir": "./output/qwen3_8b",
+        "limit": 10,
+        "time_str": "20250704_114313"
+    },
+    "stage": "all",
+    "limit": null,
+    "eval_batch_size": 1,
+    "mem_cache": false,
+    "use_cache": null,
+    "work_dir": "./outputs/20250704_114313",
+    "outputs": null,
+    "ignore_errors": false,
+    "debug": false,
+    "dry_run": false,
+    "seed": 42,
+    "api_url": null,
+    "api_key": "EMPTY",
+    "timeout": null,
+    "stream": false,
+    "judge_strategy": "auto",
+    "judge_worker_num": 1,
+    "judge_model_args": {},
+    "analysis_report": false
+}
+2025-07-04 11:43:15,467 - evalscope - INFO - *** Run task with config: /tmp/tmpadx82ehg.py 
 
-Downloading [README.md]:   0%|          | 0.00/6.52k [00:00<?, ?B/s]
-Downloading [README.md]: 100%|██████████| 6.52k/6.52k [00:00<00:00, 17.5MB/s]
+07/04 11:43:15 - OpenCompass - INFO - Current exp folder: ./output/qwen3_8b/20250704_114313
+07/04 11:43:16 - OpenCompass - WARNING - SlurmRunner is not used, so the partition argument is ignored.
+07/04 11:43:16 - OpenCompass - INFO - Partitioned into 1 tasks.
+launch OpenICLInfer[Qwen3-8B/openai_humaneval] on CPU                                     
+100%|███████████████████████████████████████████████████████| 1/1 [00:30<00:00, 30.86s/it]
+07/04 11:43:47 - OpenCompass - INFO - Partitioned into 1 tasks.
+launch OpenICLEval[Qwen3-8B/openai_humaneval] on CPU                                      
+  0%|                                                               | 0/1 [00:00<?, ?it/s]07/04 11:44:02 - OpenCompass - ERROR - /home/pyhou/miniconda3/envs/evalscope/lib/python3.10/site-packages/opencompass/runners/local.py - _launch - 236 - task OpenICLEval[Qwen3-8B/openai_humaneval] fail, see
+./output/qwen3_8b/20250704_114313/logs/eval/Qwen3-8B/openai_humaneval.out
+100%|███████████████████████████████████████████████████████| 1/1 [00:14<00:00, 14.84s/it]
+07/04 11:44:02 - OpenCompass - ERROR - /home/pyhou/miniconda3/envs/evalscope/lib/python3.10/site-packages/opencompass/runners/base.py - summarize - 64 - OpenICLEval[Qwen3-8B/openai_humaneval] failed with code 1
+dataset           version    metric    mode    Qwen3-8B
+----------------  ---------  --------  ------  ----------
+openai_humaneval  -          -         -       -
+07/04 11:44:02 - OpenCompass - INFO - write summary to /home/pyhou/projects/evalscope/output/qwen3_8b/20250704_114313/summary/summary_20250704_114313.txt
+07/04 11:44:02 - OpenCompass - INFO - write csv to /home/pyhou/projects/evalscope/output/qwen3_8b/20250704_114313/summary/summary_20250704_114313.csv
 
-Downloading data:   0%|          | 0.00/83.9k [00:00<?, ?B/s]
-Downloading data: 100%|██████████| 83.9k/83.9k [00:00<00:00, 2.72MB/s]
 
-Generating test split:   0%|          | 0/164 [00:00<?, ? examples/s]
-Generating test split: 100%|██████████| 164/164 [00:00<00:00, 37349.51 examples/s]
-07/04 11:35:45 - OpenCompass - INFO - Start inferencing [Qwen3-8B/openai_humaneval]
-[2025-07-04 11:35:45,490] [opencompass.openicl.icl_inferencer.icl_gen_inferencer] [INFO] Starting build dataloader
-[2025-07-04 11:35:45,491] [opencompass.openicl.icl_inferencer.icl_gen_inferencer] [INFO] Starting inference process...
+The markdown format results is as below:
 
-  0%|          | 0/1 [00:00<?, ?it/s]
-  0%|          | 0/1 [00:01<?, ?it/s]
+| dataset | version | metric | mode | Qwen3-8B |
+|----- | ----- | ----- | ----- | -----|
+| openai_humaneval | - | - | - | - |
+
+07/04 11:44:02 - OpenCompass - INFO - write markdown summary to /home/pyhou/projects/evalscope/output/qwen3_8b/20250704_114313/summary/summary_20250704_114313.md
+2025-07-04 11:44:02,440 - evalscope - INFO - Args: Task config is provided with dictionary type.
+2025-07-04 11:44:02,441 - evalscope - INFO - **Loading task cfg for summarizer: {
+    "model": "DummyCustomModel",
+    "model_id": "custom_model",
+    "model_args": {},
+    "model_task": "text_generation",
+    "template_type": null,
+    "chat_template": null,
+    "datasets": [],
+    "dataset_args": {},
+    "dataset_dir": "/home/pyhou/.cache/modelscope/datasets",
+    "dataset_hub": "modelscope",
+    "generation_config": {},
+    "eval_type": "custom",
+    "eval_backend": "OpenCompass",
+    "eval_config": {
+        "datasets": [
+            "humaneval"
+        ],
+        "models": [
+            {
+                "abbr": "Qwen3-8B",
+                "type": "opencompass.models.OpenAIExtra",
+                "path": "/mnt/data/Llmei/data/Qwen/Qwen3-8B",
+                "key": "",
+                "openai_api_base": "http://127.0.0.1:9160/v1/chat/completions",
+                "meta_template": {
+                    "round": [
+                        {
+                            "role": "HUMAN",
+                            "api_role": "HUMAN"
+                        },
+                        {
+                            "role": "BOT",
+                            "api_role": "BOT",
+                            "generate": true
+                        }
+                    ]
+                },
+                "query_per_second": 8,
+                "batch_size": 128,
+                "temperature": 0.6,
+                "max_out_len": 16384,
+                "max_seq_len": 32768,
+                "is_chat": true
+            }
+        ],
+        "work_dir": "./output/qwen3_8b",
+        "limit": 10,
+        "time_str": "20250704_114313"
+    },
+    "stage": "all",
+    "limit": null,
+    "eval_batch_size": 1,
+    "mem_cache": false,
+    "use_cache": null,
+    "work_dir": "./outputs",
+    "outputs": null,
+    "ignore_errors": false,
+    "debug": false,
+    "dry_run": false,
+    "seed": 42,
+    "api_url": null,
+    "api_key": "EMPTY",
+    "timeout": null,
+    "stream": false,
+    "judge_strategy": "auto",
+    "judge_worker_num": 1,
+    "judge_model_args": {},
+    "analysis_report": false
+}
+[{'dataset': 'openai_humaneval', 'version': '-', 'metric': '-', 'mode': '-', 'Qwen3-8B': '-'}]
+
+
+Reading samples...
+
+0it [00:00, ?it/s]
+10it [00:00, 4140.07it/s]
 Traceback (most recent call last):
-  File "/home/pyhou/miniconda3/envs/evalscope/lib/python3.10/site-packages/opencompass/tasks/openicl_infer.py", line 161, in <module>
+  File "/home/pyhou/miniconda3/envs/evalscope/lib/python3.10/site-packages/opencompass/tasks/openicl_eval.py", line 462, in <module>
     inferencer.run()
-  File "/home/pyhou/miniconda3/envs/evalscope/lib/python3.10/site-packages/opencompass/tasks/openicl_infer.py", line 89, in run
-    self._inference()
-  File "/home/pyhou/miniconda3/envs/evalscope/lib/python3.10/site-packages/opencompass/tasks/openicl_infer.py", line 134, in _inference
-    inferencer.inference(retriever,
-  File "/home/pyhou/miniconda3/envs/evalscope/lib/python3.10/site-packages/opencompass/openicl/icl_inferencer/icl_gen_inferencer.py", line 153, in inference
-    results = self.model.generate_from_template(
-  File "/home/pyhou/miniconda3/envs/evalscope/lib/python3.10/site-packages/opencompass/models/base.py", line 201, in generate_from_template
-    return self.generate(inputs, max_out_len=max_out_len, **kwargs)
-  File "/home/pyhou/miniconda3/envs/evalscope/lib/python3.10/site-packages/opencompass/models/openai_api.py", line 176, in generate
-    results = list(
-  File "/home/pyhou/miniconda3/envs/evalscope/lib/python3.10/concurrent/futures/_base.py", line 621, in result_iterator
-    yield _result_or_cancel(fs.pop())
-  File "/home/pyhou/miniconda3/envs/evalscope/lib/python3.10/concurrent/futures/_base.py", line 319, in _result_or_cancel
-    return fut.result(timeout)
-  File "/home/pyhou/miniconda3/envs/evalscope/lib/python3.10/concurrent/futures/_base.py", line 458, in result
-    return self.__get_result()
-  File "/home/pyhou/miniconda3/envs/evalscope/lib/python3.10/concurrent/futures/_base.py", line 403, in __get_result
-    raise self._exception
-  File "/home/pyhou/miniconda3/envs/evalscope/lib/python3.10/concurrent/futures/thread.py", line 58, in run
-    result = self.fn(*self.args, **self.kwargs)
-  File "/home/pyhou/miniconda3/envs/evalscope/lib/python3.10/site-packages/opencompass/models/openai_api.py", line 302, in _generate
-    raw_response = requests.post(self.url,
-  File "/home/pyhou/miniconda3/envs/evalscope/lib/python3.10/site-packages/requests/api.py", line 115, in post
-    return request("post", url, data=data, json=json, **kwargs)
-  File "/home/pyhou/miniconda3/envs/evalscope/lib/python3.10/site-packages/requests/api.py", line 59, in request
-    return session.request(method=method, url=url, **kwargs)
-  File "/home/pyhou/miniconda3/envs/evalscope/lib/python3.10/site-packages/requests/sessions.py", line 589, in request
-    resp = self.send(prep, **send_kwargs)
-  File "/home/pyhou/miniconda3/envs/evalscope/lib/python3.10/site-packages/requests/sessions.py", line 697, in send
-    adapter = self.get_adapter(url=request.url)
-  File "/home/pyhou/miniconda3/envs/evalscope/lib/python3.10/site-packages/requests/sessions.py", line 792, in get_adapter
-    raise InvalidSchema(f"No connection adapters were found for {url!r}")
-requests.exceptions.InvalidSchema: No connection adapters were found for "['http://127.0.0.1:9160/v1/chat/completions']"
+  File "/home/pyhou/miniconda3/envs/evalscope/lib/python3.10/site-packages/opencompass/tasks/openicl_eval.py", line 114, in run
+    self._score()
+  File "/home/pyhou/miniconda3/envs/evalscope/lib/python3.10/site-packages/opencompass/tasks/openicl_eval.py", line 250, in _score
+    result = icl_evaluator.score(**preds)
+  File "/home/pyhou/miniconda3/envs/evalscope/lib/python3.10/site-packages/opencompass/datasets/humaneval.py", line 103, in score
+    score = evaluate_functional_correctness(out_dir, self.k, n_workers=4, timeout=3.0, problem_file=HUMAN_EVAL)
+  File "/home/pyhou/miniconda3/envs/evalscope/lib/python3.10/site-packages/human_eval/evaluation.py", line 73, in evaluate_functional_correctness
+    assert len(completion_id) == len(problems), "Some problems are not attempted."
+AssertionError: Some problems are not attempted.
