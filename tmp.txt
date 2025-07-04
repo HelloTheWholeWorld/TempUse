@@ -1,145 +1,45 @@
-# 启动服务（默认开启思考模式）
-vllm serve Qwen/Qwen3-8B \
-  --enable-reasoning \          # 启用思考模式能力
-  --reasoning-parser deepseek_r1 \  # 指定解析器
-  --port 8000 \                 # 服务端口
-  --max-model-len 8192          # 最大上下文长度
+07/04 10:09:30 - OpenCompass - INFO - Task [Qwen3-8B/lukaemon_mmlu_marketing]
+07/04 10:09:34 - OpenCompass - WARNING - Max Completion tokens for /mnt/data/Llmei/data/Qwen/Qwen3-8B is :16384
+Traceback (most recent call last):
+  File "/home/pyhou/miniconda3/envs/evalscope/lib/python3.10/site-packages/modelscope/utils/import_utils.py", line 451, in _get_module
+    return importlib.import_module('.' + module_name, self.__name__)
+  File "/home/pyhou/miniconda3/envs/evalscope/lib/python3.10/importlib/__init__.py", line 126, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+  File "<frozen importlib._bootstrap>", line 1050, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1027, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1006, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 688, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 883, in exec_module
+  File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
+  File "/home/pyhou/miniconda3/envs/evalscope/lib/python3.10/site-packages/modelscope/msdatasets/__init__.py", line 2, in <module>
+    from modelscope.msdatasets.ms_dataset import MsDataset
+  File "/home/pyhou/miniconda3/envs/evalscope/lib/python3.10/site-packages/modelscope/msdatasets/ms_dataset.py", line 24, in <module>
+    from modelscope.msdatasets.utils.hf_datasets_util import load_dataset_with_ctx
+  File "/home/pyhou/miniconda3/envs/evalscope/lib/python3.10/site-packages/modelscope/msdatasets/utils/hf_datasets_util.py", line 19, in <module>
+    from datasets.data_files import (
+ImportError: cannot import name 'get_metadata_patterns' from 'datasets.data_files' (/home/pyhou/miniconda3/envs/evalscope/lib/python3.10/site-packages/datasets/data_files.py)
 
-from openai import OpenAI
+The above exception was the direct cause of the following exception:
 
-client = OpenAI(
-    base_url="http://localhost:8000/v1",  # vLLM 服务地址
-    api_key="EMPTY"  # vLLM 无需认证
-)
-
-# 启用思考模式
-response_thinking = client.chat.completions.create(
-    model="Qwen/Qwen3-8B",
-    messages=[{"role": "user", "content": "三人三台三桶水，九人九天几桶水？"}],
-    extra_body={
-        "chat_template_kwargs": {"enable_thinking": True}  # True启用思考
-    }
-)
-
-# 禁用思考模式
-response_no_thinking = client.chat.completions.create(
-    model="Qwen/Qwen3-8B",
-    messages=[{"role": "user", "content": "《[红楼梦](@replace=10001)》的作者是谁？"}],
-    extra_body={
-        "chat_template_kwargs": {"enable_thinking": False}  # False关闭思考
-    }
-)
-
-# 在用户输入后添加指令
-response_direct = client.chat.completions.create(
-    model="Qwen/Qwen3-8B",
-    messages=[{
-        "role": "user", 
-        "content": "用牛顿法求平方根的算法步骤 /no_think"  # 添加指令
-    }]
-)
-
-def test_thinking_modes():
-    # 测试问题集
-    prompts = [
-        "三人三台三桶水，九人九天几桶水？",
-        "用Python实现快速排序算法",
-        "《[三国演义](@replace=10002)》中诸葛亮的主要事迹有哪些？"
-    ]
-    
-    # 测试不同模式
-    for idx, prompt in enumerate(prompts):
-        print(f"\n=== 测试问题 {idx+1} ===")
-        print(f">> 问题: {prompt}")
-        
-        # 思考模式测试
-        thinking_res = client.chat.completions.create(
-            model="Qwen/Qwen3-8B",
-            messages=[{"role": "user", "content": prompt}],
-            extra_body={"chat_template_kwargs": {"enable_thinking": True}},
-            max_tokens=1024
-        )
-        print("\n[思考模式答案]:")
-        print(thinking_res.choices[0].message.content)
-        
-        # 非思考模式测试
-        no_thinking_res = client.chat.completions.create(
-            model="Qwen/Qwen3-8B",
-            messages=[{"role": "user", "content": prompt + " /no_think"}],  # 指令方式
-            max_tokens=512
-        )
-        print("\n[非思考模式答案]:")
-        print(no_thinking_res.choices[0].message.content)
-
-# 执行测试
-test_thinking_modes()
-
-
-from evalscope import TaskConfig, run_task
-task_cfg = TaskConfig(
-    model='Qwen3-32B',
-    api_url='http://127.0.0.1:8801/v1/chat/completions',
-    eval_type='service',
-    datasets=[
-        'data_collection',
-    ],
-    dataset_args={
-        'data_collection': {
-            'dataset_id': 'modelscope/EvalScope-Qwen3-Test',
-            'filters': {'remove_until': '</think>'}  # 过滤掉思考的内容
-        }
-    },
-    eval_batch_size=128,
-    generation_config={
-        'max_tokens': 30000,  # 最大生成token数，建议设置为较大值避免输出截断
-        'temperature': 0.6,  # 采样温度 (qwen 报告推荐值)
-        'top_p': 0.95,  # top-p采样 (qwen 报告推荐值)
-        'top_k': 20,  # top-k采样 (qwen 报告推荐值)
-        'n': 1,  # 每个请求产生的回复数量
-    },
-    timeout=60000,  # 超时时间
-    stream=True,  # 是否使用流式输出
-    limit=100,  # 设置为100条数据进行测试
-)
-
-run_task(task_cfg=task_cfg)
-
-
-
-
-
-
-
-
-from evalscope import TaskConfig, run_task
-
-task_cfg = TaskConfig(
-    model='Qwen3-32B',
-    api_url='http://127.0.0.1:8801/v1/chat/completions',
-    eval_type='service',
-    datasets=[
-        'data_collection',
-    ],
-    dataset_args={
-        'data_collection': {
-            'dataset_id': 'modelscope/EvalScope-Qwen3-Test',
-        }
-    },
-    eval_batch_size=128,
-    generation_config={
-        'max_tokens': 20000,  # 最大生成token数，建议设置为较大值避免输出截断
-        'temperature': 0.7,  # 采样温度 (qwen 报告推荐值)
-        'top_p': 0.8,  # top-p采样 (qwen 报告推荐值)
-        'top_k': 20,  # top-k采样 (qwen 报告推荐值)
-        'n': 1,  # 每个请求产生的回复数量
-        'chat_template_kwargs': {'enable_thinking': False}  # 关闭思考模式
-    },
-    timeout=60000,  # 超时时间
-    stream=True,  # 是否使用流式输出
-    limit=1000,  # 设置为1000条数据进行测试
-)
-
-run_task(task_cfg=task_cfg)
-
-
-openai.BadRequestError: Error code: 400 - {'object': 'error', 'message': "This model's maximum context length is 32768 tokens. However, you requested 32908 tokens (140 in the messages, 32768 in the completion). Please reduce the length of the messages or completion. None", 'type': 'BadRequestError', 'param': None, 'code': 400}
+Traceback (most recent call last):
+  File "/home/pyhou/miniconda3/envs/evalscope/lib/python3.10/site-packages/opencompass/tasks/openicl_infer.py", line 161, in <module>
+    inferencer.run()
+  File "/home/pyhou/miniconda3/envs/evalscope/lib/python3.10/site-packages/opencompass/tasks/openicl_infer.py", line 79, in run
+    self.dataset = build_dataset_from_cfg(self.dataset_cfg)
+  File "/home/pyhou/miniconda3/envs/evalscope/lib/python3.10/site-packages/opencompass/utils/build.py", line 13, in build_dataset_from_cfg
+    return LOAD_DATASET.build(dataset_cfg)
+  File "/home/pyhou/miniconda3/envs/evalscope/lib/python3.10/site-packages/mmengine/registry/registry.py", line 570, in build
+    return self.build_func(cfg, *args, **kwargs, registry=self)
+  File "/home/pyhou/miniconda3/envs/evalscope/lib/python3.10/site-packages/mmengine/registry/build_functions.py", line 121, in build_from_cfg
+    obj = obj_cls(**args)  # type: ignore
+  File "/home/pyhou/miniconda3/envs/evalscope/lib/python3.10/site-packages/opencompass/datasets/base.py", line 12, in __init__
+    self.dataset = self.load(**kwargs)
+  File "/home/pyhou/miniconda3/envs/evalscope/lib/python3.10/site-packages/opencompass/datasets/mmlu.py", line 22, in load
+    from modelscope import MsDataset
+  File "<frozen importlib._bootstrap>", line 1075, in _handle_fromlist
+  File "/home/pyhou/miniconda3/envs/evalscope/lib/python3.10/site-packages/modelscope/utils/import_utils.py", line 434, in __getattr__
+    module = self._get_module(self._class_to_module[name])
+  File "/home/pyhou/miniconda3/envs/evalscope/lib/python3.10/site-packages/modelscope/utils/import_utils.py", line 453, in _get_module
+    raise RuntimeError(
+RuntimeError: Failed to import modelscope.msdatasets because of the following error (look up to see its traceback):
+cannot import name 'get_metadata_patterns' from 'datasets.data_files' (/home/pyhou/miniconda3/envs/evalscope/lib/python3.10/site-packages/datasets/data_files.py)
