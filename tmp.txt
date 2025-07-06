@@ -1,190 +1,59 @@
-2025-07-04 11:43:13,446 - evalscope - INFO - Args: Task config is provided with dictionary type.
-2025-07-04 11:43:13,449 - evalscope - INFO - Check the OpenCompass environment: OK
-2025-07-04 11:43:13,449 - evalscope - INFO - Dump task config to ./outputs/20250704_114313/configs/task_config_742719.yaml
-2025-07-04 11:43:13,453 - evalscope - INFO - {
-    "model": "DummyCustomModel",
-    "model_id": "custom_model",
-    "model_args": {},
-    "model_task": "text_generation",
-    "template_type": null,
-    "chat_template": null,
-    "datasets": [],
-    "dataset_args": {},
-    "dataset_dir": "/home/pyhou/.cache/modelscope/datasets",
-    "dataset_hub": "modelscope",
-    "generation_config": {},
-    "eval_type": "custom",
-    "eval_backend": "OpenCompass",
-    "eval_config": {
-        "datasets": [
-            "humaneval"
-        ],
-        "models": [
-            {
-                "abbr": "Qwen3-8B",
-                "type": "opencompass.models.OpenAIExtra",
-                "path": "/mnt/data/Llmei/data/Qwen/Qwen3-8B",
-                "key": "",
-                "openai_api_base": "http://127.0.0.1:9160/v1/chat/completions",
-                "meta_template": {
-                    "round": [
-                        {
-                            "role": "HUMAN",
-                            "api_role": "HUMAN"
-                        },
-                        {
-                            "role": "BOT",
-                            "api_role": "BOT",
-                            "generate": true
-                        }
-                    ]
-                },
-                "query_per_second": 8,
-                "batch_size": 128,
-                "temperature": 0.6,
-                "max_out_len": 16384,
-                "max_seq_len": 32768,
-                "is_chat": true
-            }
-        ],
-        "work_dir": "./output/qwen3_8b",
-        "limit": 10,
-        "time_str": "20250704_114313"
-    },
-    "stage": "all",
-    "limit": null,
-    "eval_batch_size": 1,
-    "mem_cache": false,
-    "use_cache": null,
-    "work_dir": "./outputs/20250704_114313",
-    "outputs": null,
-    "ignore_errors": false,
-    "debug": false,
-    "dry_run": false,
-    "seed": 42,
-    "api_url": null,
-    "api_key": "EMPTY",
-    "timeout": null,
-    "stream": false,
-    "judge_strategy": "auto",
-    "judge_worker_num": 1,
-    "judge_model_args": {},
-    "analysis_report": false
-}
-2025-07-04 11:43:15,467 - evalscope - INFO - *** Run task with config: /tmp/tmpadx82ehg.py 
-
-07/04 11:43:15 - OpenCompass - INFO - Current exp folder: ./output/qwen3_8b/20250704_114313
-07/04 11:43:16 - OpenCompass - WARNING - SlurmRunner is not used, so the partition argument is ignored.
-07/04 11:43:16 - OpenCompass - INFO - Partitioned into 1 tasks.
-launch OpenICLInfer[Qwen3-8B/openai_humaneval] on CPU                                     
-100%|███████████████████████████████████████████████████████| 1/1 [00:30<00:00, 30.86s/it]
-07/04 11:43:47 - OpenCompass - INFO - Partitioned into 1 tasks.
-launch OpenICLEval[Qwen3-8B/openai_humaneval] on CPU                                      
-  0%|                                                               | 0/1 [00:00<?, ?it/s]07/04 11:44:02 - OpenCompass - ERROR - /home/pyhou/miniconda3/envs/evalscope/lib/python3.10/site-packages/opencompass/runners/local.py - _launch - 236 - task OpenICLEval[Qwen3-8B/openai_humaneval] fail, see
-./output/qwen3_8b/20250704_114313/logs/eval/Qwen3-8B/openai_humaneval.out
-100%|███████████████████████████████████████████████████████| 1/1 [00:14<00:00, 14.84s/it]
-07/04 11:44:02 - OpenCompass - ERROR - /home/pyhou/miniconda3/envs/evalscope/lib/python3.10/site-packages/opencompass/runners/base.py - summarize - 64 - OpenICLEval[Qwen3-8B/openai_humaneval] failed with code 1
-dataset           version    metric    mode    Qwen3-8B
-----------------  ---------  --------  ------  ----------
-openai_humaneval  -          -         -       -
-07/04 11:44:02 - OpenCompass - INFO - write summary to /home/pyhou/projects/evalscope/output/qwen3_8b/20250704_114313/summary/summary_20250704_114313.txt
-07/04 11:44:02 - OpenCompass - INFO - write csv to /home/pyhou/projects/evalscope/output/qwen3_8b/20250704_114313/summary/summary_20250704_114313.csv
-
-
-The markdown format results is as below:
-
 | dataset | version | metric | mode | Qwen3-8B |
 |----- | ----- | ----- | ----- | -----|
-| openai_humaneval | - | - | - | - |
-
-07/04 11:44:02 - OpenCompass - INFO - write markdown summary to /home/pyhou/projects/evalscope/output/qwen3_8b/20250704_114313/summary/summary_20250704_114313.md
-2025-07-04 11:44:02,440 - evalscope - INFO - Args: Task config is provided with dictionary type.
-2025-07-04 11:44:02,441 - evalscope - INFO - **Loading task cfg for summarizer: {
-    "model": "DummyCustomModel",
-    "model_id": "custom_model",
-    "model_args": {},
-    "model_task": "text_generation",
-    "template_type": null,
-    "chat_template": null,
-    "datasets": [],
-    "dataset_args": {},
-    "dataset_dir": "/home/pyhou/.cache/modelscope/datasets",
-    "dataset_hub": "modelscope",
-    "generation_config": {},
-    "eval_type": "custom",
-    "eval_backend": "OpenCompass",
-    "eval_config": {
-        "datasets": [
-            "humaneval"
-        ],
-        "models": [
-            {
-                "abbr": "Qwen3-8B",
-                "type": "opencompass.models.OpenAIExtra",
-                "path": "/mnt/data/Llmei/data/Qwen/Qwen3-8B",
-                "key": "",
-                "openai_api_base": "http://127.0.0.1:9160/v1/chat/completions",
-                "meta_template": {
-                    "round": [
-                        {
-                            "role": "HUMAN",
-                            "api_role": "HUMAN"
-                        },
-                        {
-                            "role": "BOT",
-                            "api_role": "BOT",
-                            "generate": true
-                        }
-                    ]
-                },
-                "query_per_second": 8,
-                "batch_size": 128,
-                "temperature": 0.6,
-                "max_out_len": 16384,
-                "max_seq_len": 32768,
-                "is_chat": true
-            }
-        ],
-        "work_dir": "./output/qwen3_8b",
-        "limit": 10,
-        "time_str": "20250704_114313"
-    },
-    "stage": "all",
-    "limit": null,
-    "eval_batch_size": 1,
-    "mem_cache": false,
-    "use_cache": null,
-    "work_dir": "./outputs",
-    "outputs": null,
-    "ignore_errors": false,
-    "debug": false,
-    "dry_run": false,
-    "seed": 42,
-    "api_url": null,
-    "api_key": "EMPTY",
-    "timeout": null,
-    "stream": false,
-    "judge_strategy": "auto",
-    "judge_worker_num": 1,
-    "judge_model_args": {},
-    "analysis_report": false
-}
-[{'dataset': 'openai_humaneval', 'version': '-', 'metric': '-', 'mode': '-', 'Qwen3-8B': '-'}]
-
-
-Reading samples...
-
-0it [00:00, ?it/s]
-10it [00:00, 4140.07it/s]
-Traceback (most recent call last):
-  File "/home/pyhou/miniconda3/envs/evalscope/lib/python3.10/site-packages/opencompass/tasks/openicl_eval.py", line 462, in <module>
-    inferencer.run()
-  File "/home/pyhou/miniconda3/envs/evalscope/lib/python3.10/site-packages/opencompass/tasks/openicl_eval.py", line 114, in run
-    self._score()
-  File "/home/pyhou/miniconda3/envs/evalscope/lib/python3.10/site-packages/opencompass/tasks/openicl_eval.py", line 250, in _score
-    result = icl_evaluator.score(**preds)
-  File "/home/pyhou/miniconda3/envs/evalscope/lib/python3.10/site-packages/opencompass/datasets/humaneval.py", line 103, in score
-    score = evaluate_functional_correctness(out_dir, self.k, n_workers=4, timeout=3.0, problem_file=HUMAN_EVAL)
-  File "/home/pyhou/miniconda3/envs/evalscope/lib/python3.10/site-packages/human_eval/evaluation.py", line 73, in evaluate_functional_correctness
-    assert len(completion_id) == len(problems), "Some problems are not attempted."
-AssertionError: Some problems are not attempted.
+| lukaemon_mmlu_college_biology | caec7d | accuracy | gen | 80.00 |
+| lukaemon_mmlu_college_chemistry | 520aa6 | accuracy | gen | 70.00 |
+| lukaemon_mmlu_college_computer_science | 99c216 | accuracy | gen | 70.00 |
+| lukaemon_mmlu_college_mathematics | 678751 | accuracy | gen | 70.00 |
+| lukaemon_mmlu_college_physics | 4f382c | accuracy | gen | 90.00 |
+| lukaemon_mmlu_electrical_engineering | 770ce3 | accuracy | gen | 80.00 |
+| lukaemon_mmlu_astronomy | d3ee01 | accuracy | gen | 80.00 |
+| lukaemon_mmlu_anatomy | 72183b | accuracy | gen | 60.00 |
+| lukaemon_mmlu_abstract_algebra | 2db373 | accuracy | gen | 80.00 |
+| lukaemon_mmlu_machine_learning | 0283bb | accuracy | gen | 70.00 |
+| lukaemon_mmlu_clinical_knowledge | cb3218 | accuracy | gen | 80.00 |
+| lukaemon_mmlu_global_facts | ab07b6 | accuracy | gen | 40.00 |
+| lukaemon_mmlu_management | 80876d | accuracy | gen | 70.00 |
+| lukaemon_mmlu_nutrition | 4543bd | accuracy | gen | 60.00 |
+| lukaemon_mmlu_marketing | 7394e3 | accuracy | gen | 60.00 |
+| lukaemon_mmlu_professional_accounting | 444b7f | accuracy | gen | 80.00 |
+| lukaemon_mmlu_high_school_geography | 0780e6 | accuracy | gen | 60.00 |
+| lukaemon_mmlu_international_law | cf3179 | accuracy | gen | 50.00 |
+| lukaemon_mmlu_moral_scenarios | f6dbe2 | accuracy | gen | 60.00 |
+| lukaemon_mmlu_computer_security | ce7550 | accuracy | gen | 50.00 |
+| lukaemon_mmlu_high_school_microeconomics | 04d21a | accuracy | gen | 70.00 |
+| lukaemon_mmlu_professional_law | 5f7e6c | accuracy | gen | 50.00 |
+| lukaemon_mmlu_medical_genetics | 881ef5 | accuracy | gen | 80.00 |
+| lukaemon_mmlu_professional_psychology | 221a16 | accuracy | gen | 70.00 |
+| lukaemon_mmlu_jurisprudence | 001f24 | accuracy | gen | 90.00 |
+| lukaemon_mmlu_world_religions | 232c09 | accuracy | gen | 80.00 |
+| lukaemon_mmlu_philosophy | 08042b | accuracy | gen | 60.00 |
+| lukaemon_mmlu_virology | 12e270 | accuracy | gen | 40.00 |
+| lukaemon_mmlu_high_school_chemistry | ae8820 | accuracy | gen | 80.00 |
+| lukaemon_mmlu_public_relations | e7d39b | accuracy | gen | 70.00 |
+| lukaemon_mmlu_high_school_macroeconomics | a01685 | accuracy | gen | 80.00 |
+| lukaemon_mmlu_human_sexuality | 42407c | accuracy | gen | 70.00 |
+| lukaemon_mmlu_elementary_mathematics | 269926 | accuracy | gen | 90.00 |
+| lukaemon_mmlu_high_school_physics | 93278f | accuracy | gen | 70.00 |
+| lukaemon_mmlu_high_school_computer_science | 9965a5 | accuracy | gen | 90.00 |
+| lukaemon_mmlu_high_school_european_history | eefc90 | accuracy | gen | 70.00 |
+| lukaemon_mmlu_business_ethics | 1dec08 | accuracy | gen | 80.00 |
+| lukaemon_mmlu_moral_disputes | a2173e | accuracy | gen | 70.00 |
+| lukaemon_mmlu_high_school_statistics | 8f3f3a | accuracy | gen | 90.00 |
+| lukaemon_mmlu_miscellaneous | 935647 | accuracy | gen | 90.00 |
+| lukaemon_mmlu_formal_logic | cfcb0c | accuracy | gen | 60.00 |
+| lukaemon_mmlu_high_school_government_and_politics | 3c52f9 | accuracy | gen | 60.00 |
+| lukaemon_mmlu_prehistory | bbb197 | accuracy | gen | 60.00 |
+| lukaemon_mmlu_security_studies | 9b1743 | accuracy | gen | 100.00 |
+| lukaemon_mmlu_high_school_biology | 37b125 | accuracy | gen | 80.00 |
+| lukaemon_mmlu_logical_fallacies | 9cebb0 | accuracy | gen | 70.00 |
+| lukaemon_mmlu_high_school_world_history | 048e7e | accuracy | gen | 50.00 |
+| lukaemon_mmlu_professional_medicine | 857144 | accuracy | gen | 80.00 |
+| lukaemon_mmlu_high_school_mathematics | ed4dc0 | accuracy | gen | 80.00 |
+| lukaemon_mmlu_college_medicine | 38709e | accuracy | gen | 70.00 |
+| lukaemon_mmlu_high_school_us_history | 8932df | accuracy | gen | 60.00 |
+| lukaemon_mmlu_sociology | c266a2 | accuracy | gen | 80.00 |
+| lukaemon_mmlu_econometrics | d1134d | accuracy | gen | 70.00 |
+| lukaemon_mmlu_high_school_psychology | 7db114 | accuracy | gen | 70.00 |
+| lukaemon_mmlu_human_aging | 82a410 | accuracy | gen | 60.00 |
+| lukaemon_mmlu_us_foreign_policy | 528cfe | accuracy | gen | 80.00 |
+| lukaemon_mmlu_conceptual_physics | 63588e | accuracy | gen | 80.00 |
