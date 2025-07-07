@@ -1,59 +1,62 @@
-| dataset | version | metric | mode | Qwen3-8B |
-|----- | ----- | ----- | ----- | -----|
-| lukaemon_mmlu_college_biology | caec7d | accuracy | gen | 80.00 |
-| lukaemon_mmlu_college_chemistry | 520aa6 | accuracy | gen | 70.00 |
-| lukaemon_mmlu_college_computer_science | 99c216 | accuracy | gen | 70.00 |
-| lukaemon_mmlu_college_mathematics | 678751 | accuracy | gen | 70.00 |
-| lukaemon_mmlu_college_physics | 4f382c | accuracy | gen | 90.00 |
-| lukaemon_mmlu_electrical_engineering | 770ce3 | accuracy | gen | 80.00 |
-| lukaemon_mmlu_astronomy | d3ee01 | accuracy | gen | 80.00 |
-| lukaemon_mmlu_anatomy | 72183b | accuracy | gen | 60.00 |
-| lukaemon_mmlu_abstract_algebra | 2db373 | accuracy | gen | 80.00 |
-| lukaemon_mmlu_machine_learning | 0283bb | accuracy | gen | 70.00 |
-| lukaemon_mmlu_clinical_knowledge | cb3218 | accuracy | gen | 80.00 |
-| lukaemon_mmlu_global_facts | ab07b6 | accuracy | gen | 40.00 |
-| lukaemon_mmlu_management | 80876d | accuracy | gen | 70.00 |
-| lukaemon_mmlu_nutrition | 4543bd | accuracy | gen | 60.00 |
-| lukaemon_mmlu_marketing | 7394e3 | accuracy | gen | 60.00 |
-| lukaemon_mmlu_professional_accounting | 444b7f | accuracy | gen | 80.00 |
-| lukaemon_mmlu_high_school_geography | 0780e6 | accuracy | gen | 60.00 |
-| lukaemon_mmlu_international_law | cf3179 | accuracy | gen | 50.00 |
-| lukaemon_mmlu_moral_scenarios | f6dbe2 | accuracy | gen | 60.00 |
-| lukaemon_mmlu_computer_security | ce7550 | accuracy | gen | 50.00 |
-| lukaemon_mmlu_high_school_microeconomics | 04d21a | accuracy | gen | 70.00 |
-| lukaemon_mmlu_professional_law | 5f7e6c | accuracy | gen | 50.00 |
-| lukaemon_mmlu_medical_genetics | 881ef5 | accuracy | gen | 80.00 |
-| lukaemon_mmlu_professional_psychology | 221a16 | accuracy | gen | 70.00 |
-| lukaemon_mmlu_jurisprudence | 001f24 | accuracy | gen | 90.00 |
-| lukaemon_mmlu_world_religions | 232c09 | accuracy | gen | 80.00 |
-| lukaemon_mmlu_philosophy | 08042b | accuracy | gen | 60.00 |
-| lukaemon_mmlu_virology | 12e270 | accuracy | gen | 40.00 |
-| lukaemon_mmlu_high_school_chemistry | ae8820 | accuracy | gen | 80.00 |
-| lukaemon_mmlu_public_relations | e7d39b | accuracy | gen | 70.00 |
-| lukaemon_mmlu_high_school_macroeconomics | a01685 | accuracy | gen | 80.00 |
-| lukaemon_mmlu_human_sexuality | 42407c | accuracy | gen | 70.00 |
-| lukaemon_mmlu_elementary_mathematics | 269926 | accuracy | gen | 90.00 |
-| lukaemon_mmlu_high_school_physics | 93278f | accuracy | gen | 70.00 |
-| lukaemon_mmlu_high_school_computer_science | 9965a5 | accuracy | gen | 90.00 |
-| lukaemon_mmlu_high_school_european_history | eefc90 | accuracy | gen | 70.00 |
-| lukaemon_mmlu_business_ethics | 1dec08 | accuracy | gen | 80.00 |
-| lukaemon_mmlu_moral_disputes | a2173e | accuracy | gen | 70.00 |
-| lukaemon_mmlu_high_school_statistics | 8f3f3a | accuracy | gen | 90.00 |
-| lukaemon_mmlu_miscellaneous | 935647 | accuracy | gen | 90.00 |
-| lukaemon_mmlu_formal_logic | cfcb0c | accuracy | gen | 60.00 |
-| lukaemon_mmlu_high_school_government_and_politics | 3c52f9 | accuracy | gen | 60.00 |
-| lukaemon_mmlu_prehistory | bbb197 | accuracy | gen | 60.00 |
-| lukaemon_mmlu_security_studies | 9b1743 | accuracy | gen | 100.00 |
-| lukaemon_mmlu_high_school_biology | 37b125 | accuracy | gen | 80.00 |
-| lukaemon_mmlu_logical_fallacies | 9cebb0 | accuracy | gen | 70.00 |
-| lukaemon_mmlu_high_school_world_history | 048e7e | accuracy | gen | 50.00 |
-| lukaemon_mmlu_professional_medicine | 857144 | accuracy | gen | 80.00 |
-| lukaemon_mmlu_high_school_mathematics | ed4dc0 | accuracy | gen | 80.00 |
-| lukaemon_mmlu_college_medicine | 38709e | accuracy | gen | 70.00 |
-| lukaemon_mmlu_high_school_us_history | 8932df | accuracy | gen | 60.00 |
-| lukaemon_mmlu_sociology | c266a2 | accuracy | gen | 80.00 |
-| lukaemon_mmlu_econometrics | d1134d | accuracy | gen | 70.00 |
-| lukaemon_mmlu_high_school_psychology | 7db114 | accuracy | gen | 70.00 |
-| lukaemon_mmlu_human_aging | 82a410 | accuracy | gen | 60.00 |
-| lukaemon_mmlu_us_foreign_policy | 528cfe | accuracy | gen | 80.00 |
-| lukaemon_mmlu_conceptual_physics | 63588e | accuracy | gen | 80.00 |
+from tencentcloud.common import credential
+from tencentcloud.common.profile.client_profile import ClientProfile
+from tencentcloud.document.v20210526 import document_client, models
+
+# 初始化凭证
+cred = credential.Credential("YOUR_SECRET_ID", "YOUR_SECRET_KEY")
+client_profile = ClientProfile()
+client = document_client.DocumentClient(cred, "ap-shanghai", client_profile)  # 区域按需修改
+
+# 创建新文档
+req = models.CreateDocumentRequest()
+req.DocumentName = "跨网协作文档"
+req.Category = "text"  # 文本类型
+resp = client.CreateDocument(req)
+doc_id = resp.DocumentId  # 保存文档ID（关键！）
+print(f"文档创建成功！ID: {doc_id}")
+
+
+
+## 看
+from tencentcloud.common import credential
+from tencentcloud.document.v20210526 import document_client, models
+
+def get_document_content(doc_id):
+    cred = credential.Credential("YOUR_SECRET_ID", "YOUR_SECRET_KEY")
+    client = document_client.DocumentClient(cred, "ap-shanghai")
+    
+    req = models.GetDocumentContentRequest()
+    req.DocumentId = doc_id  # 传入外网创建的文档ID
+    resp = client.GetDocumentContent(req)
+    content = resp.Content  # 文档纯文本内容
+    return content
+
+# 调用示例
+current_content = get_document_content("doc-xxxxxxxx")
+print(current_content)
+
+
+
+# push
+def append_to_document(doc_id, new_text):
+    cred = credential.Credential("YOUR_SECRET_ID", "YOUR_SECRET_KEY")
+    client = document_client.DocumentClient(cred, "ap-shanghai")
+    
+    # 1. 获取当前内容
+    current_content = get_document_content(doc_id)
+    
+    # 2. 追加新内容
+    updated_content = current_content + "\n" + new_text
+    
+    # 3. 更新文档
+    req = models.UpdateDocumentContentRequest()
+    req.DocumentId = doc_id
+    req.Content = updated_content
+    resp = client.UpdateDocumentContent(req)
+    return "内容追加成功！"
+
+# 调用示例
+append_to_document("doc-xxxxxxxx", "内网服务器新增数据")
+
+
+
