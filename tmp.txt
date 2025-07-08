@@ -1,45 +1,37 @@
-# Download dataset to data/ folder
-wget https://github.com/open-compass/opencompass/releases/download/0.2.2.rc1/OpenCompassData-core-20240207.zip
-unzip OpenCompassData-core-20240207.zip
+import os
+from evalscope import TaskConfig, run_task
+from evalscope.constants import JudgeStrategy
 
+task_cfg = TaskConfig(
+    model='Qwen/Qwen2.5-0.5B-Instruct',
+    datasets=[
+        'general_qa',
+    ],
+    dataset_args={
+        'general_qa': {
+            'dataset_id': 'custom_eval/text/qa',
+            'subset_list': [
+                'example'
+            ],
+        }
+    },
+    # judge 相关参数
+    judge_model_args={
+        'model_id': 'qwen2.5-72b-instruct',
+        'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+        'api_key': os.getenv('DASHSCOPE_API_KEY'),
+        'generation_config': {
+            'temperature': 0.0,
+            'max_tokens': 4096
+        },
+        # 根据参考答案和模型输出，判断模型输出是否正确
+        'score_type': 'pattern',
+    },
+    # judge 并发数
+    judge_worker_num=5,
+    # 使用 LLM 进行评测
+    judge_strategy=JudgeStrategy.LLM,
+)
 
+run_task(task_cfg=task_cfg)
 
-my_lora
-+-------------+-------------------------+-----------------+---------------+-------+                                                                                                                                                   
-|  task_type  |         metric          |  dataset_name   | average_score | count |                                                                                                                                                   
-+-------------+-------------------------+-----------------+---------------+-------+                                                                                                                                                   
-|    exam     |     AverageAccuracy     |    mmlu_pro     |    0.7143     | 12032 |                                                                                                                                                   
-|    exam     |     AverageAccuracy     |   mmlu_redux    |    0.8388     | 5700  |                                                                                                                                                   
-|    exam     |     AverageAccuracy     |      ceval      |    0.8098     | 1346  |                                                                                                                                                   
-|    math     |      AveragePass@1      |    math_500     |     0.92      |  500  |                                                                                                                                                   
-| instruction |  inst_level_loose_acc   |     ifeval      |    0.5052     |  477  |                                                                                                                                                   
-| instruction | prompt_level_strict_acc |     ifeval      |    0.3606     |  477  |                                                                                                                                                   
-| instruction |  inst_level_strict_acc  |     ifeval      |    0.4941     |  477  |                                                                                                                                                   
-| instruction | prompt_level_loose_acc  |     ifeval      |    0.3732     |  477  |                                                                                                                                                   
-|  knowledge  |      AveragePass@1      |      gpqa       |    0.5253     |  198  |                                                                                                                                                   
-|    code     |         Pass@1          | live_code_bench |    0.4121     |  182  |                                                                                                                                                   
-|    exam     |     AverageAccuracy     |      iquiz      |    0.5917     |  120  |                                                                                                                                                   
-|    math     |      AveragePass@1      |     aime24      |    0.7333     |  30   |                                                                                                                                                   
-|    math     |      AveragePass@1      |     aime25      |    0.5667     |  30   |                                                                                                                                                   
-+-------------+-------------------------+-----------------+---------------+-------+
-
-
-
-qwen3-8B
-+-------------+-------------------------+-----------------+---------------+-------+                                                                                                                                                   
-|  task_type  |         metric          |  dataset_name   | average_score | count |                                                                                                                                                   
-+-------------+-------------------------+-----------------+---------------+-------+                                                                                                                                                   
-|    exam     |     AverageAccuracy     |    mmlu_pro     |    0.7148     | 12032 |                                                                                                                                                   
-|    exam     |     AverageAccuracy     |   mmlu_redux    |    0.8288     | 5700  |                                                                                                                                                   
-|    exam     |     AverageAccuracy     |      ceval      |    0.8336     | 1346  |                                                                                                                                                   
-|    math     |      AveragePass@1      |    math_500     |     0.932     |  500  |                                                                                                                                                   
-| instruction |  inst_level_loose_acc   |     ifeval      |    0.5084     |  477  |                                                                                                                                                   
-| instruction | prompt_level_strict_acc |     ifeval      |    0.3669     |  477  |                                                                                                                                                   
-| instruction |  inst_level_strict_acc  |     ifeval      |    0.4962     |  477  |                                                                                                                                                   
-| instruction | prompt_level_loose_acc  |     ifeval      |    0.3795     |  477  |                                                                                                                                                   
-|  knowledge  |      AveragePass@1      |      gpqa       |    0.5758     |  198  |                                                                                                                                                   
-|    code     |         Pass@1          | live_code_bench |    0.4396     |  182  |                                                                                                                                                   
-|    exam     |     AverageAccuracy     |      iquiz      |    0.6167     |  120  |                                                                                                                                                   
-|    math     |      AveragePass@1      |     aime24      |    0.6667     |  30   |                                                                                                                                                   
-|    math     |      AveragePass@1      |     aime25      |      0.5      |  30   |                                                                                                                                                   
-+-------------+-------------------------+-----------------+---------------+-------+
