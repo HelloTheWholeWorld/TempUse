@@ -1,3 +1,45 @@
 # Download dataset to data/ folder
 wget https://github.com/open-compass/opencompass/releases/download/0.2.2.rc1/OpenCompassData-core-20240207.zip
 unzip OpenCompassData-core-20240207.zip
+
+
+
+my_lora
++-------------+-------------------------+-----------------+---------------+-------+                                                                                                                                                   
+|  task_type  |         metric          |  dataset_name   | average_score | count |                                                                                                                                                   
++-------------+-------------------------+-----------------+---------------+-------+                                                                                                                                                   
+|    exam     |     AverageAccuracy     |    mmlu_pro     |    0.7143     | 12032 |                                                                                                                                                   
+|    exam     |     AverageAccuracy     |   mmlu_redux    |    0.8388     | 5700  |                                                                                                                                                   
+|    exam     |     AverageAccuracy     |      ceval      |    0.8098     | 1346  |                                                                                                                                                   
+|    math     |      AveragePass@1      |    math_500     |     0.92      |  500  |                                                                                                                                                   
+| instruction |  inst_level_loose_acc   |     ifeval      |    0.5052     |  477  |                                                                                                                                                   
+| instruction | prompt_level_strict_acc |     ifeval      |    0.3606     |  477  |                                                                                                                                                   
+| instruction |  inst_level_strict_acc  |     ifeval      |    0.4941     |  477  |                                                                                                                                                   
+| instruction | prompt_level_loose_acc  |     ifeval      |    0.3732     |  477  |                                                                                                                                                   
+|  knowledge  |      AveragePass@1      |      gpqa       |    0.5253     |  198  |                                                                                                                                                   
+|    code     |         Pass@1          | live_code_bench |    0.4121     |  182  |                                                                                                                                                   
+|    exam     |     AverageAccuracy     |      iquiz      |    0.5917     |  120  |                                                                                                                                                   
+|    math     |      AveragePass@1      |     aime24      |    0.7333     |  30   |                                                                                                                                                   
+|    math     |      AveragePass@1      |     aime25      |    0.5667     |  30   |                                                                                                                                                   
++-------------+-------------------------+-----------------+---------------+-------+
+
+
+
+qwen3-8B
++-------------+-------------------------+-----------------+---------------+-------+                                                                                                                                                   
+|  task_type  |         metric          |  dataset_name   | average_score | count |                                                                                                                                                   
++-------------+-------------------------+-----------------+---------------+-------+                                                                                                                                                   
+|    exam     |     AverageAccuracy     |    mmlu_pro     |    0.7148     | 12032 |                                                                                                                                                   
+|    exam     |     AverageAccuracy     |   mmlu_redux    |    0.8288     | 5700  |                                                                                                                                                   
+|    exam     |     AverageAccuracy     |      ceval      |    0.8336     | 1346  |                                                                                                                                                   
+|    math     |      AveragePass@1      |    math_500     |     0.932     |  500  |                                                                                                                                                   
+| instruction |  inst_level_loose_acc   |     ifeval      |    0.5084     |  477  |                                                                                                                                                   
+| instruction | prompt_level_strict_acc |     ifeval      |    0.3669     |  477  |                                                                                                                                                   
+| instruction |  inst_level_strict_acc  |     ifeval      |    0.4962     |  477  |                                                                                                                                                   
+| instruction | prompt_level_loose_acc  |     ifeval      |    0.3795     |  477  |                                                                                                                                                   
+|  knowledge  |      AveragePass@1      |      gpqa       |    0.5758     |  198  |                                                                                                                                                   
+|    code     |         Pass@1          | live_code_bench |    0.4396     |  182  |                                                                                                                                                   
+|    exam     |     AverageAccuracy     |      iquiz      |    0.6167     |  120  |                                                                                                                                                   
+|    math     |      AveragePass@1      |     aime24      |    0.6667     |  30   |                                                                                                                                                   
+|    math     |      AveragePass@1      |     aime25      |      0.5      |  30   |                                                                                                                                                   
++-------------+-------------------------+-----------------+---------------+-------+
