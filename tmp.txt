@@ -1,37 +1,45 @@
 import os
-from evalscope import TaskConfig, run_task
-from evalscope.constants import JudgeStrategy
+import json
+from pathlib import Path
 
-task_cfg = TaskConfig(
-    model='Qwen/Qwen2.5-0.5B-Instruct',
-    datasets=[
-        'general_qa',
-    ],
-    dataset_args={
-        'general_qa': {
-            'dataset_id': 'custom_eval/text/qa',
-            'subset_list': [
-                'example'
-            ],
+def extract_qa_from_json(json_path):
+    """从单个JSON文件中提取question和answer字段"""
+    try:
+        with open(json_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        # 提取目标字段[2,6](@ref)
+        return {
+            "question": data.get("question", ""),
+            "answer": data.get("answer", "")
         }
-    },
-    # judge 相关参数
-    judge_model_args={
-        'model_id': 'qwen2.5-72b-instruct',
-        'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
-        'api_key': os.getenv('DASHSCOPE_API_KEY'),
-        'generation_config': {
-            'temperature': 0.0,
-            'max_tokens': 4096
-        },
-        # 根据参考答案和模型输出，判断模型输出是否正确
-        'score_type': 'pattern',
-    },
-    # judge 并发数
-    judge_worker_num=5,
-    # 使用 LLM 进行评测
-    judge_strategy=JudgeStrategy.LLM,
-)
+    except (json.JSONDecodeError, KeyError) as e:
+        print(f"解析失败 {json_path}: {str(e)}")
+        return None
 
-run_task(task_cfg=task_cfg)
+def process_directory_to_jsonl(input_dir, output_file):
+    """处理目录下所有JSON文件并生成JSONL"""
+    jsonl_data = []
+    
+    # 递归遍历所有JSON文件[3,12](@ref)
+    for root, _, files in os.walk(input_dir):
+        for file in files:
+            if file.endswith('.json'):
+                file_path = os.path.join(root, file)
+                qa_data = extract_qa_from_json(file_path)
+                if qa_data:
+                    jsonl_data.append(qa_data)
+    
+    # 写入JSONL文件[9,10](@ref)
+    with open(output_file, 'w', encoding='utf-8') as f_out:
+        for item in jsonl_data:
+            f_out.write(json.dumps(item, ensure_ascii=False) + '\n')
+    
+    print(f"成功处理 {len(jsonl_data)} 个JSON文件 → {output_file}")
 
+if __name__ == "__main__":
+    # 配置路径
+    input_directory = "./your_json_folder"  # 替换为JSON文件夹路径
+    output_jsonl = "qa_dataset.jsonl"      # 输出文件名
+    
+    # 执行转换
+    process_directory_to_jsonl(input_directory, output_jsonl)
