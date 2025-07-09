@@ -9,18 +9,27 @@ from tenacity import (
     wait_exponential,
     retry_if_exception_type
 )
-from typing import Dict, Any, List, Optional, Tuple
-from config import CONFIG
+from typing import Dict, Any, List, Optional, Tuple, Union
+# from config import CONFIG
+
+import dashscope
+from dashscope import Generation
+from http import HTTPStatus
+from concurrent.futures import ThreadPoolExecutor
+import threading
 
 # 配置日志
 # logging_level = logging.DEBUG if CONFIG['DEBUG'] else logging.INFO
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger("ModelAPIEngine")
 
 class ModelAPIClient:
+    # 类级别的线程锁和线程池
+    _thread_pool = ThreadPoolExecutor(max_workers=10)  # 可根据需要调整线程数
+    _qwen_global_lock = threading.Lock()
     """统一多模型API客户端，支持云端API和本地Ollama"""
     def __init__(
         self,
@@ -72,7 +81,7 @@ class ModelAPIClient:
             "deepseek": "/v1/chat/completions",
             "ollama": "/api/generate",
             "qwen": "/api/v1/services/aigc/text-generation/generation",
-            "vllm": ""
+            "vllm": "/v1/completions"
         }
 
         # 模型特定参数模板
@@ -107,7 +116,8 @@ class ModelAPIClient:
                     "top_p": 1.0,
                     "enable_search": False,
                     "stream": False,
-                    "enable_thinking": False
+                    "enable_thinking": False,
+                    "incremental_output": False  # 新增增量输出参数[1,5](@ref)
                 }
             },
             "ollama": {
@@ -119,6 +129,15 @@ class ModelAPIClient:
                     "top_p": 1.0,
                     "num_ctx": 2048
                 }
+            },
+            "vllm": {
+                "model": model_name,
+                "prompt": "",
+                "temperature": 0.7,
+                "top_p": 1.0,
+                "max_tokens": None,
+                "stream": False,
+                "extra_body": {}  # 用于传递特殊参数
             }
         }
         logger.info(f"Initialized {model_type.upper()} client for model: {model_name}")
@@ -133,8 +152,8 @@ class ModelAPIClient:
             "openai": "https://api.openai.com",
             "deepseek": "https://api.deepseek.com",
             "ollama": "http://localhost:11434",
-            "qwen": "https://dashscope.aliyuncs.com"
-            "vllm": ""
+            "qwen": "https://dashscope.aliyuncs.com",
+            "vllm": "http://localhost:8000"
         }
         return defaults.get(self.model_type, "")
     
@@ -158,10 +177,29 @@ class ModelAPIClient:
             # 更新Qwen的消息内容
             payload["input"]["messages"][1]["content"] = prompt
 
+            # 自动启用流式输出当启用思考模式[1,5](@ref)
+
+            if self.model_kwargs.get("enable_thinking", False):
+                payload["parameters"]["stream"] = True
+                payload["parameters"]["incremental_output"] = True
+            
             # 更新参数
-            for key in ["temperature", "top_p", "enable_search", "stream", "enable_thinking"]:
+            for key in ["temperature", "top_p", "enable_search", "stream", 
+                        "enable_thinking", "incremental_output", "thinking_budget"]:
                 if key in self.model_kwargs:
                     payload["parameters"][key] = self.model_kwargs[key]
+                    
+        elif self.model_type == "vllm":
+                payload["prompt"] = prompt
+                # 设置Qwen思考模式参数
+                if "enable_thinking" in self.model_kwargs:
+                    payload["extra_body"]["chat_template_kwargs"] = {
+                        "enable_thinking": self.model_kwargs["enable_thinking"]
+                    }
+                # 更新其他参数
+                for key in ["temperature", "top_p", "max_tokens", "stream"]:
+                    if key in self.model_kwargs:
+                        payload[key] = self.model_kwargs[key]
         else:
             payload["messages"][0]["content"] = prompt
             # 更新通用参数
@@ -181,7 +219,7 @@ class ModelAPIClient:
         elif self.model_type == "qwen" and self.api_key:
             # 添加官方要求的额外头部
             headers["Authorization"] = f"Bearer {self.api_key}"
-            headers["X-DashScope-Async"] = "disable"  # 确保同步调用
+            # headers["X-DashScope-Async"] = "disable"  # 确保同步调用
         # Ollama不需要认证头
         return headers
     
@@ -194,26 +232,94 @@ class ModelAPIClient:
         elif self.model_type == "qwen":
             # 根据官方格式提取响应内容
             return response_data["output"]["choices"][0]["message"]["content"]
+        elif self.model_type == "vllm":
+            return response_data["choices"][0]["text"]
         else:
             return json.dumps(response_data)
-    
+
+    def _handle_qwen_stream_sync(self, prompt: str) -> Dict[str, str]:
+        """使用dashscope SDK处理Qwen思考模式的流式响应(同步版本)"""
+        reasoning_content = ""
+        final_content = ""
+        
+        # 构建extra_body参数
+        extra_body = {"enable_thinking": True}
+        if "thinking_budget" in self.model_kwargs:
+            extra_body["thinking_budget"] = self.model_kwargs["thinking_budget"]
+        if "enable_search" in self.model_kwargs:
+            extra_body["enable_search"] = self.model_kwargs["enable_search"]
+
+        # 使用线程锁保护全局API密钥设置
+        with ModelAPIClient._qwen_global_lock:
+            original_api_key = dashscope.api_key
+            dashscope.api_key = self.api_key
+        
+        try:
+            # 调用DashScope API
+            responses = Generation.call(
+                model=self.model_name,
+                messages=[{"role": "user", "content": prompt}],
+                stream=True,
+                incremental_output=True,
+                extra_body=extra_body,
+                result_format="message"
+            )
+            
+            for r in responses:
+                if r.status_code != HTTPStatus.OK:
+                    raise Exception(f"API错误: {r.code} - {r.message}")
+                
+                # 解析响应
+                if r.output and r.output.choices:
+                    choice = r.output.choices[0]
+                    message = choice.message
+                    
+                    # 获取思考内容
+                    if hasattr(message, 'reasoning_content') and message.reasoning_content:
+                        reasoning_content += message.reasoning_content
+                    
+                    # 获取回答内容
+                    if hasattr(message, 'content') and message.content:
+                        final_content += message.content
+        finally:
+            # 恢复原始API密钥
+            with ModelAPIClient._qwen_global_lock:
+                dashscope.api_key = original_api_key
+        
+        return {
+            "reasoning": reasoning_content,
+            "content": final_content
+        }
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=2, max=30),
-        retry=retry_if_exception_type((aiohttp.ClientError, asyncio.TimeoutError)),
+        retry=retry_if_exception_type((Exception,)),
         before_sleep=lambda retry_state: logger.warning(
-            f"Retry #{retry_state.attempt_number} for request due to"
+            f"Retry #{retry_state.attempt_number} for request due to {retry_state.outcome.exception()}"
         )
     )
-    async def _make_async_request(self, session: aiohttp.ClientSession, prompt: str) -> str:
+    async def _make_async_request(self, session: aiohttp.ClientSession, prompt: str) -> Union[str, Dict[str, str]]:
         """执行异步API请求（带重试机制）"""
+        # 对于启用了思考模式的Qwen请求，使用dashscope SDK
+        if self.model_type == "qwen" and self.model_kwargs.get("enable_thinking", False):
+            try:
+                loop = asyncio.get_running_loop()
+                # 使用线程池执行同步阻塞调用
+                result = await loop.run_in_executor(
+                    ModelAPIClient._thread_pool, 
+                    self._handle_qwen_stream_sync, 
+                    prompt
+                )
+                return result
+            except Exception as e:
+                logger.error(f"Qwen思考模式调用失败: {str(e)}")
+                raise
+        
+        # 其他模型和非思考模式的Qwen请求保持原实现
         url = f"{self.base_url}{self.endpoints[self.model_type]}"
         payload = self._build_payload(prompt)
         headers = self._build_headers()
 
-        logging.debug(headers)
-        logging.debug(payload)
-        
         async with self.semaphore:
             try:
                 async with session.post(
@@ -223,49 +329,42 @@ class ModelAPIClient:
                     timeout=self.timeout
                 ) as response:
                     response.raise_for_status()
+                    
+                    # 处理Qwen非思考模式的流式响应
+                    if self.model_type == "qwen" and payload["parameters"].get("stream", False):
+                        return await self._handle_qwen_non_thinking_stream(response)
+                        
+                    # 非流式响应处理
                     response_data = await response.json()
-                    logger.debug(response_data)
-
-                    # 处理API返回的错误
-                    if "error" in response_data:
-                        error_msg = response_data["error"].get("message", "Unknown API error")
-                        logger.error(f"API error: {error_msg}")
-                        raise aiohttp.ClientResponseError(
-                            response.request_info,
-                            response.history,
-                            status=response.status,
-                            message=error_msg
-                        )
                     return self._extract_response(response_data)
-            
-            except aiohttp.ClientResponseError as e:
-                logger.debug(f"Request URL: {url}")
-                logger.debug(f"Request Headers: {headers}")
-                logger.debug(f"Request Payload: {payload}")
-                logger.error(f"HTTP error {e.status}: {e.message}")
-                error_detail = await e.text()
-                logger.error(f"ClientResponseError API error {e.status}: {error_detail}")
-                raise
-            except asyncio.TimeoutError:
-                logger.debug(f"Request URL: {url}")
-                logger.debug(f"Request Headers: {headers}")
-                logger.debug(f"Request Payload: {payload}")
-                logger.warning("Request timed out")
-                raise
+                    
             except Exception as e:
-                logger.debug(f"Request URL: {url}")
-                logger.debug(f"Request Headers: {headers}")
-                logger.debug(f"Request Payload: {payload}")
-                logger.error(f"Unexpected error: {str(e)}")
+                logger.error(f"API请求失败: {str(e)}")
                 raise
 
-    async def generate(self, session: aiohttp.ClientSession, prompt: str) -> str:
+    async def _handle_qwen_non_thinking_stream(self, response: aiohttp.ClientResponse) -> str:
+        """处理Qwen非思考模式的流式响应"""
+        full_content = ""
+        async for line in response.content:
+            if line:
+                decoded_line = line.decode('utf-8').strip()
+                if decoded_line.startswith('data:'):
+                    try:
+                        event_data = json.loads(decoded_line[5:])
+                        content = event_data.get('output', {}).get('choices', [{}])[0].get('message', {}).get('content', '')
+                        if content:
+                            full_content += content
+                    except json.JSONDecodeError:
+                        logger.warning(f"JSON解析失败: {decoded_line}")
+        return full_content
+
+    async def generate(self, session: aiohttp.ClientSession, prompt: str) -> Union[str, Dict[str, str]]:
         """
         生成文本内容
         
         :param session: aiohttp会话对象
         :param prompt: 输入的提示文本
-        :return: 模型生成的文本
+        :return: 模型生成的文本（或包含思考过程的字典）
         """
         try:
             result = await self._make_async_request(session, prompt)
@@ -294,7 +393,7 @@ class AsyncBatchProcessor:
     async def __aexit__(self, exc_type, exc, tb):
         await self.session.close()
 
-    async def _generate_and_record(self, session: aiohttp.ClientSession, client: ModelAPIClient, prompt: str) -> Tuple[str, str]:
+    async def _generate_and_record(self, session: aiohttp.ClientSession, client: ModelAPIClient, prompt: str) -> Tuple[Union[str, Dict[str, str]], str]:
         """调用生成方法并记录模型名称"""
         try:
             result = await client.generate(session, prompt)
@@ -303,7 +402,7 @@ class AsyncBatchProcessor:
             logger.error(f"生成失败: {prompt[:50]}... 错误: {str(e)}")
             return ("", client.model_name)
     
-    async def process_batch(self, prompts: List[str]) -> List[Tuple[str, str]]:
+    async def process_batch(self, prompts: List[str]) -> List[Tuple[Union[str, Dict[str, str]], str]]:
         """
         处理一批提示文本，返回结果和对应的模型名称
         
@@ -344,3 +443,48 @@ class AsyncBatchProcessor:
         while True:
             for client in self.api_clients:
                 yield client
+
+# 使用示例
+async def main():
+    # 创建Qwen客户端（启用思维链模式）
+    qwen_client = ModelAPIClient(
+        model_type="qwen",
+        api_key="sk-426c613869b34e508a78e0153e3198e6",
+        model_name="qwen3-4b",
+        max_concurrent=3,
+        max_retries=1,
+        save_results=True,
+        output_dir="./qwen_results",
+        enable_thinking=True,
+        thinking_budget=4000,
+        stream=True,  # 必须启用流式以支持思考模式
+        incremental_output=True  # 启用增量输出
+    )
+    
+    # 初始化批量处理器
+    async with AsyncBatchProcessor(
+        api_clients=[qwen_client]
+    ) as processor:
+        prompts = [
+            "解释量子计算的基本原理",
+            "计算：如果一辆车在2小时内行驶了120公里，那么它的平均速度是多少公里/小时？",
+            "动物园有15只狮子和20只老虎。如果将3只狮子转移到另一个动物园，还剩下多少只大型猫科动物？"
+        ]
+        
+        results = await processor.process_batch(prompts)
+        
+        # 输出结果
+        for i, (prompt, (result, model_name)) in enumerate(zip(prompts, results)):
+            print(f"提示 {i+1}: {prompt}")
+            print(f"模型: {model_name}")
+            
+            if isinstance(result, dict) and "reasoning" in result:
+                print(f"思考过程: {result['reasoning'][:100]}...")
+                print(f"最终回答: {result['content'][:100]}...")
+            else:
+                print(f"回答: {str(result)[:100]}...")
+                
+            print("-" * 50)
+
+if __name__ == "__main__":
+    asyncio.run(main())
