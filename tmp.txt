@@ -2,16 +2,29 @@ import os
 import json
 import csv
 from abc import ABC, abstractmethod
-from typing import Dict, Iterator, List, Union, Optional
-from datetime import datetime
+from typing import Dict, Iterator, Callable, Optional, List
 
 class BaseDataLoader(ABC):
-    """数据加载器基类，支持断点续传功能"""
+    """支持回调机制和格式导出的数据加载器基类"""
     
     def __init__(self, file_path: str, state_file: str = "loader_state.json"):
+        """
+        :param file_path: 数据文件路径
+        :param state_file: 断点状态记录文件路径
+        """
         self.file_path = file_path
         self.state_file = state_file
         self.state = self._load_state()
+        self.callback_registry = {}  # 存储回调函数的注册表
+        self.current_index = 0  # 当前处理位置
+        
+    def register_callback(self, callback_name: str, callback_func: Callable[[int], None]):
+        """注册回调函数[2,3](@ref)
+        
+        :param callback_name: 回调类型 ('item_processed'或'final_save')
+        :param callback_func: 回调函数
+        """
+        self.callback_registry[callback_name] = callback_func
         
     def _load_state(self) -> Dict:
         """加载断点续传状态"""
@@ -24,7 +37,7 @@ class BaseDataLoader(ABC):
         return {}
     
     def _save_state(self, current_index: int):
-        """保存当前处理进度"""
+        """保存当前处理进度[1](@ref)"""
         self.state[self.file_path] = current_index
         try:
             with open(self.state_file, 'w', encoding='utf-8') as f:
@@ -37,35 +50,49 @@ class BaseDataLoader(ABC):
         return self.state.get(self.file_path, 0)
     
     def process_data(self) -> Iterator[Dict]:
-        """数据处理主流程，支持断点续传"""
+        """数据处理主流程，支持断点续传和回调通知[1,4](@ref)"""
         start_index = self.get_start_index()
         print(f"从索引 {start_index} 开始处理文件: {self.file_path}")
+        self.current_index = start_index
         
         try:
             for i, item in enumerate(self._read_file()):
                 if i < start_index:
                     continue
                 
+                # 统一输出格式
                 result = {
                     "raw_data": item,
                     "source": self.file_path,
                     "index": i
                 }
                 
-                self._save_state(i + 1)
+                # 不在此处更新状态！等待回调通知
+                self.current_index = i
                 yield result
                 
         except Exception as e:
             print(f"文件处理中断: {e}")
             raise
         finally:
-            print(f"文件处理完成: {self.file_path}, 最后处理索引: {self.get_start_index()}")
+            # 执行最终状态保存回调
+            if "final_save" in self.callback_registry:
+                self.callback_registry["final_save"](self.current_index)
+                
+            print(f"文件处理完成: {self.file_path}, 最后处理索引: {self.current_index}")
 
-    @abstractmethod
-    def _read_file(self) -> Iterator[Dict]:
-        pass
-
-    # 新增的Alpaca/ShareGPT导出功能
+    def notify_item_processed(self, item_index: int):
+        """通知加载器某个数据项已处理完成[2,3](@ref)
+        
+        :param item_index: 已处理项的索引
+        """
+        # 更新状态为下一个索引
+        self._save_state(item_index + 1)
+        
+        # 执行已注册的回调函数
+        if "item_processed" in self.callback_registry:
+            self.callback_registry["item_processed"](item_index)
+    
     def dump_to_format(
         self, 
         output_path: str, 
@@ -73,14 +100,14 @@ class BaseDataLoader(ABC):
         field_mapping: Optional[Dict[str, str]] = None
     ):
         """
-        将加载的数据导出为Alpaca或ShareGPT格式[2,3](@ref)
+        将加载的数据导出为Alpaca或ShareGPT格式[6,7,8](@ref)
         
         :param output_path: 输出文件路径
         :param format_type: 导出格式 ('alpaca' 或 'sharegpt')
         :param field_mapping: 字段映射关系，用于自定义字段名称
         """
-        data = list(self.process_data())
-        formatted_data = []
+        # 创建输出目录
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
         
         # 设置默认字段映射
         default_mapping = {
@@ -92,57 +119,67 @@ class BaseDataLoader(ABC):
         }
         field_map = field_mapping or default_mapping
         
-        for item in data:
-            raw = item["raw_data"]
-            
-            if format_type == "alpaca":
-                # 构建Alpaca格式数据[1,2](@ref)
-                formatted_item = {
-                    "instruction": raw.get(field_map["instruction"], ""),
-                    "input": raw.get(field_map["input"], ""),
-                    "output": raw.get(field_map["output"], ""),
-                    "system": raw.get(field_map["system"], ""),
-                    "history": raw.get(field_map["history"], [])
-                }
-                formatted_data.append(formatted_item)
-                
-            elif format_type == "sharegpt":
-                # 构建ShareGPT格式数据[2,3](@ref)
-                conversations = []
-                if "conversations" in raw:
-                    # 如果已有对话结构，直接使用
-                    conversations = raw["conversations"]
-                else:
-                    # 否则从指令和输出构建对话
-                    conversations = [
-                        {"from": "human", "value": raw.get(field_map["instruction"], "")},
-                        {"from": "gpt", "value": raw.get(field_map["output"], "")}
-                    ]
-                
-                formatted_item = {
-                    "conversations": conversations,
-                    "system": raw.get(field_map["system"], ""),
-                    "tools": raw.get("tools", "")  # ShareGPT特有字段
-                }
-                formatted_data.append(formatted_item)
-        
-        # 创建输出目录
-        os.makedirs(os.path.dirname(output_path), exist_ok=True)
-        
-        # 写入文件
         with open(output_path, 'w', encoding='utf-8') as f:
-            if format_type == "alpaca":
-                json.dump(formatted_data, f, ensure_ascii=False, indent=2)
-            else:
-                # ShareGPT格式使用JSONL
-                for item in formatted_data:
-                    f.write(json.dumps(item, ensure_ascii=False) + "\n")
+            # 处理每条数据
+            for data_item in self.process_data():
+                raw = data_item["raw_data"]
+                
+                if format_type == "alpaca":
+                    # 构建Alpaca格式数据[8](@ref)
+                    formatted_item = {
+                        "instruction": raw.get(field_map["instruction"], ""),
+                        "input": raw.get(field_map["input"], ""),
+                        "output": raw.get(field_map["output"], "")
+                    }
+                    
+                    # 添加可选字段
+                    if "system" in field_map:
+                        formatted_item["system"] = raw.get(field_map["system"], "")
+                    if "history" in field_map:
+                        formatted_item["history"] = raw.get(field_map["history"], [])
+                    
+                    # 写入JSON行格式
+                    f.write(json.dumps(formatted_item, ensure_ascii=False) + "\n")
+                    
+                elif format_type == "sharegpt":
+                    # 构建ShareGPT格式数据[6,7](@ref)
+                    conversations = []
+                    if "conversations" in raw:
+                        # 如果已有对话结构，直接使用
+                        conversations = raw["conversations"]
+                    else:
+                        # 否则从指令和输出构建对话
+                        conversations = [
+                            {"from": "human", "value": raw.get(field_map["instruction"], "")},
+                            {"from": "gpt", "value": raw.get(field_map["output"], "")}
+                        ]
+                    
+                    formatted_item = {
+                        "conversations": conversations
+                    }
+                    
+                    # 添加可选字段
+                    if "system" in field_map:
+                        formatted_item["system"] = raw.get(field_map["system"], "")
+                    if "tools" in raw:
+                        formatted_item["tools"] = raw.get("tools", "")
+                    
+                    # 写入JSON行格式
+                    f.write(json.dumps(formatted_item, ensure_ascii=False) + "\n")
+                
+                # 通知该项已处理
+                self.notify_item_processed(data_item["index"])
         
-        print(f"成功导出 {len(formatted_data)} 条数据到 {output_path} ({format_type.upper()}格式)")
+        print(f"成功导出数据到 {output_path} ({format_type.upper()}格式)")
+
+    @abstractmethod
+    def _read_file(self) -> Iterator[Dict]:
+        """子类需实现的具体文件读取方法"""
+        pass
 
 
 class JsonDataLoader(BaseDataLoader):
-    """JSON格式数据加载器，支持完整JSON数组和JSONL格式[1,6](@ref)"""
+    """JSON格式数据加载器，支持完整JSON数组和JSONL格式"""
     
     def _read_file(self) -> Iterator[Dict]:
         """读取JSON文件（支持jsonlines格式）"""
@@ -150,7 +187,8 @@ class JsonDataLoader(BaseDataLoader):
             # 尝试解析为jsonlines（每行一个JSON对象）
             for i, line in enumerate(f):
                 try:
-                    yield json.loads(line.strip())
+                    if line.strip():  # 跳过空行
+                        yield json.loads(line.strip())
                 except json.JSONDecodeError:
                     print(f"第 {i} 行JSON解析失败，跳过")
             
@@ -166,7 +204,7 @@ class JsonDataLoader(BaseDataLoader):
 
 
 class TsvDataLoader(BaseDataLoader):
-    """TSV格式数据加载器[9,10](@ref)"""
+    """TSV格式数据加载器"""
     
     def _read_file(self) -> Iterator[Dict]:
         """读取TSV文件"""
@@ -185,114 +223,89 @@ class TsvDataLoader(BaseDataLoader):
 
 
 
+# 初始化JSON加载器
+loader = JsonDataLoader("original_data.json", "loader_state.json")
 
-
-
-
-import os
-import json
-import csv
-from abc import ABC, abstractmethod
-from typing import Dict, Iterator, Callable, Optional
-
-class BaseDataLoader(ABC):
-    """支持回调机制的数据加载器基类"""
+# 注册回调函数
+def on_item_processed(index):
+    print(f"✅ 已处理索引: {index}")
     
-    def __init__(self, file_path: str, state_file: str = "loader_state.json"):
-        self.file_path = file_path
-        self.state_file = state_file
-        self.state = self._load_state()
-        self.callback_registry = {}  # 存储回调函数的注册表
+def on_final_save(last_index):
+    print(f"💾 最终状态保存: {last_index}")
+    # 可添加清理资源等操作
+
+loader.register_callback("item_processed", on_item_processed)
+loader.register_callback("final_save", on_final_save)
+
+# 处理数据
+for data_item in loader.process_data():
+    # 实际处理逻辑（如调用LLM API）
+    processed_data = process_with_llm(data_item)
+    save_result(processed_data)
+    
+    # 必须调用通知
+    loader.notify_item_processed(data_item["index"])
+
+
+
+
+
+
+
+
+
+# 加载JSON数据
+loader = JsonDataLoader("original_data.json")
+
+# 自定义字段映射
+custom_mapping = {
+    "instruction": "query",
+    "output": "response",
+    "system": "role"
+}
+
+# 导出为Alpaca格式（自动注册回调）
+loader.dump_to_format(
+    "output/alpaca_data.jsonl", 
+    "alpaca", 
+    field_mapping=custom_mapping
+)
+
+
+
+
+
+
+# 加载TSV数据
+tsv_loader = TsvDataLoader("conversations.tsv")
+
+# 导出为ShareGPT格式
+tsv_loader.dump_to_format(
+    "output/sharegpt_data.jsonl", 
+    "sharegpt"
+)
+
+
+
+
+
+
+
+# 初始化加载器（自动读取状态文件）
+loader = JsonDataLoader("large_dataset.json", "loader_state.json")
+
+try:
+    for data_item in loader.process_data():
+        # 模拟处理过程中断
+        if random.random() < 0.01:
+            raise Exception("模拟处理中断")
         
-    def register_callback(self, callback_name: str, callback_func: Callable[[int], None]):
-        """注册回调函数"""
-        self.callback_registry[callback_name] = callback_func
+        # 实际处理逻辑
+        process_item(data_item)
         
-    def _load_state(self) -> Dict:
-        """加载断点续传状态"""
-        if os.path.exists(self.state_file):
-            try:
-                with open(self.state_file, 'r', encoding='utf-8') as f:
-                    return json.load(f)
-            except Exception as e:
-                print(f"状态文件加载失败: {e}")
-        return {}
+        # 通知完成
+        loader.notify_item_processed(data_item["index"])
+except Exception as e:
+    print(f"处理中断: {e}")
     
-    def _save_state(self, current_index: int):
-        """保存当前处理进度"""
-        self.state[self.file_path] = current_index
-        try:
-            with open(self.state_file, 'w', encoding='utf-8') as f:
-                json.dump(self.state, f, indent=4)
-        except Exception as e:
-            print(f"状态保存失败: {e}")
-    
-    def get_start_index(self) -> int:
-        """获取当前文件的起始处理位置"""
-        return self.state.get(self.file_path, 0)
-    
-    def process_data(self) -> Iterator[Dict]:
-        """数据处理主流程，支持断点续传和回调通知"""
-        start_index = self.get_start_index()
-        print(f"从索引 {start_index} 开始处理文件: {self.file_path}")
-        
-        try:
-            for i, item in enumerate(self._read_file()):
-                if i < start_index:
-                    continue
-                
-                # 统一输出格式
-                result = {
-                    "raw_data": item,
-                    "source": self.file_path,
-                    "index": i
-                }
-                
-                # 不在此处更新状态！等待回调通知
-                yield result
-                
-        except Exception as e:
-            print(f"文件处理中断: {e}")
-            raise
-        finally:
-            # 执行最终状态保存回调
-            if "final_save" in self.callback_registry:
-                self.callback_registry["final_save"](self.get_start_index())
-                
-            print(f"文件处理完成: {self.file_path}, 最后处理索引: {self.get_start_index()}")
-
-    def notify_item_processed(self, item_index: int):
-        """通知加载器某个数据项已处理完成"""
-        # 更新状态为下一个索引
-        self._save_state(item_index + 1)
-        
-        # 执行已注册的回调函数
-        if "item_processed" in self.callback_registry:
-            self.callback_registry["item_processed"](item_index)
-
-    @abstractmethod
-    def _read_file(self) -> Iterator[Dict]:
-        pass
-
-class JsonDataLoader(BaseDataLoader):
-    """JSON格式数据加载器"""
-    
-    def _read_file(self) -> Iterator[Dict]:
-        """读取JSON文件（支持jsonlines格式）"""
-        with open(self.file_path, 'r', encoding='utf-8') as f:
-            # 尝试解析为jsonlines（每行一个JSON对象）
-            for i, line in enumerate(f):
-                try:
-                    yield json.loads(line.strip())
-                except json.JSONDecodeError:
-                    print(f"第 {i} 行JSON解析失败，跳过")
-            
-            # 如果不是jsonlines格式，尝试解析为完整JSON数组
-            f.seek(0)
-            try:
-                data = json.load(f)
-                if isinstance(data, list):
-                    for item in data:
-                        yield item
-            except json.JSONDecodeError:
-                raise ValueError("文件不是有效的JSON格式")
+# 重新运行将从上次位置继续
