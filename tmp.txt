@@ -1,50 +1,28 @@
-import os
-from evalscope import TaskConfig, run_task
-from evalscope.constants import JudgeStrategy
+from evalscope.collections import CollectionSchema, DatasetInfo, WeightedSampler
+from evalscope.utils.io_utils import dump_jsonl_data
 
-task_cfg = TaskConfig(
-    model='/mnt/data/Llmei/data/Qwen/Qwen3-8B',
-    api_url='http://127.0.0.1:9160/v1/chat/completions',
-    eval_type='service',
-    datasets=[
-        'general_qa',
-    ],
-    dataset_args={
-        'general_qa': {
-            'local_path': '/mnt/data/Llmei/data/eval/space_cal84.jsonl',
-        }
-    },
-    eval_batch_size=128,
-    generation_config={
-        'max_tokens': 16384,  # 最大生成token数，建议设置为较大值避免输出截断
-        'temperature': 0.6,  # 采样温度 (qwen 报告推荐值)
-        'top_p': 0.95,  # top-p采样 (qwen 报告推荐值)
-        'top_k': 20,  # top-k采样 (qwen 报告推荐值)
-        'n': 1,  # 每个请求产生的回复数量
-    },
-    timeout=60000,  # 超时时间
-    stream=False,  # 是否使用流式输出
-    # limit=1000,  # 设置为100条数据进行测试
+schema = CollectionSchema(name='Qwen3', datasets=[
+    CollectionSchema(name='English', datasets=[
+        DatasetInfo(name='mmlu_pro', weight=1, task_type='exam', tags=['en'], args={'few_shot_num': 0}),
+        DatasetInfo(name='mmlu_redux', weight=1, task_type='exam', tags=['en'], args={'few_shot_num': 0}),
+        DatasetInfo(name='ifeval', weight=1, task_type='instruction', tags=['en'], args={'few_shot_num': 0}),
+    ]),
+    CollectionSchema(name='Chinese', datasets=[
+        DatasetInfo(name='ceval', weight=1, task_type='exam', tags=['zh'], args={'few_shot_num': 0}),
+        DatasetInfo(name='iquiz', weight=1, task_type='exam', tags=['zh'], args={'few_shot_num': 0}),
+    ]),
+    CollectionSchema(name='Code', datasets=[
+        DatasetInfo(name='live_code_bench', weight=1, task_type='code', tags=['en'], args={'few_shot_num': 0, 'subset_list': ['v5_v6'], 'extra_params': {'start_date': '2025-01-01', 'end_date': '2025-04-30'}}),
+    ]),
+    CollectionSchema(name='Math&Science', datasets=[
+        DatasetInfo(name='math_500', weight=1, task_type='math', tags=['en'], args={'few_shot_num': 0}),
+        DatasetInfo(name='aime24', weight=1, task_type='math', tags=['en'], args={'few_shot_num': 0}),
+        DatasetInfo(name='aime25', weight=1, task_type='math', tags=['en'], args={'few_shot_num': 0}),
+        DatasetInfo(name='gpqa', weight=1, task_type='knowledge', tags=['en'], args={'subset_list': ['gpqa_diamond'], 'few_shot_num': 0})
+    ])
+])
 
-
-    # judge 相关参数
-    judge_model_args={
-        'model_id': '/mnt/data/Llmei/data/Qwen/Qwen3-8B',
-        'api_url': 'http://127.0.0.1:9160/v1/chat/completions',
-        'api_key': "",
-        'generation_config': {
-            'temperature': 0.0,
-            'max_tokens': 4096,
-        },
-        # 根据参考答案和模型输出，判断模型输出是否正确
-        'score_type': 'pattern',
-    },
-    # judge 并发数
-    judge_worker_num=1,
-    # 使用 LLM 进行评测
-    judge_strategy=JudgeStrategy.LLM,
-    # analysis_report=True,
-)
-
-run_task(task_cfg=task_cfg)
-
+# get the mixed data
+mixed_data = WeightedSampler(schema).sample(100000000)  # set a large number to ensure all datasets are sampled
+# dump the mixed data to a jsonl file
+dump_jsonl_data(mixed_data, 'outputs/qwen3_test.jsonl')
