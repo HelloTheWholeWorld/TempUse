@@ -1,0 +1,202 @@
+{
+  "calculate": [
+    {
+      "question_type": "calculate_complex_formula_calculate",
+      "description": "提取完整的公式推理逻辑，并以合适的变量举例子，展示相关问题的计算过程。"
+    }
+  ],
+  "rewrite": [
+    {
+      "question_type": "rewrite_style_transfer",
+      "description": "在保持语义不变的前提下，根据指定的语言风格，重新组织润色文字内容。"
+    },
+    {
+      "question_type": "rewrite_simplification_rewrite",
+      "description": "在保持语义不变的前提下，根据字数限制或其他精简要求，重新组织文字内容。"
+    },
+    {
+      "question_type": "rewrite_expand_rewrite",
+      "description": "在保持语义不变的前提下，根据字数限制或其他扩充要求，重新组织文字内容。"
+    },
+    {
+      "question_type": "rewrite_format_conversion",
+      "description": "在保持语义不变的前提下，按特定结构重组文本，如列表转段落、JSON转表格"
+    }
+  ],
+  "design": [
+    {
+      "question_type": "design_system_architecture",
+      "description": "系统架构设计，如软件架构设计"
+    },
+    {
+      "question_type": "design_process",
+      "description": "业务流程设计或算法流程设计"
+    },
+    {
+      "question_type": "design_experiment",
+      "description": "设计一个有趣的实验"
+    },
+    {
+      "question_type": "design_algorithm_verification",
+      "description": "设计一组数据，有效验证算法"
+    },
+    {
+      "question_type": "design_algorithm",
+      "description": "设计一个领域相关算法"
+    }
+  ],
+  "provide": [
+    {
+      "question_type": "provide_example",
+      "description": "通过实例说明概念或用法"
+    },
+    {
+      "question_type": "provide_list",
+      "description": "结构化枚举相关信息项"
+    },
+    {
+      "question_type": "provide_definitions",
+      "description": "给出术语或概念的准确定义"
+    },
+    {
+      "question_type": "provide_solutions",
+      "description": "针对问题给出可行解决路径"
+    },
+    {
+      "question_type": "provide_references",
+      "description": "给出权威信息来源或参考文献"
+    }
+  ],
+  "describe": [
+    {
+      "question_type": "describe_difference",
+      "description": "描述两个或多个对象之间的差异。"
+    },
+    {
+      "question_type": "describe_benefit",
+      "description": "阐明某事物带来的正向价值。"
+    },
+    {
+      "question_type": "describe_impact",
+      "description": "分析事件或决策的多层次后果。"
+    },
+    {
+      "question_type": "describe_process",
+      "description": "分步解释动态流程或机制。"
+    },
+    {
+      "question_type": "describe_states",
+      "description": "刻画对象在特定时刻的属性或条件。"
+    },
+    {
+      "question_type": "describe_relation",
+      "description": "揭示对象间的关联模式。"
+    },
+    {
+      "question_type": "describe_structures",
+      "description": "解析系统或对象的组成方式。"
+    },
+    {
+      "question_type": "describe_trends",
+      "description": "总结数据或现象的变化规律。"
+    }
+  ],
+  "explain": [
+    {
+      "question_type": "explain_concept",
+      "description": "提取关键概念，并进行解释"
+    },
+    {
+      "question_type": "explain_purpose",
+      "description": "进行意图理解与阐述"
+    },
+    {
+      "question_type": "explain_difference",
+      "description": "对易混淆的名词、概念或动作进行分别阐述，并比较差异"
+    },
+    {
+      "question_type": "explain_meaning",
+      "description": "对含义进行解释，不使用额外的信息"
+    }
+  ],
+  "generate": [
+    {
+      "question_type": "generate_list",
+      "description": "将关键信息以列表的形式重新组织"
+    },
+    {
+      "question_type": "generate_report",
+      "description": "以报告方式重新生成文本"
+    },
+    {
+      "question_type": "generate_paragraph",
+      "description": "以段落的形式重写，并保持核心语义不变"
+    },
+    {
+      "question_type": "generate_summary",
+      "description": "以尽量简短的文字概括，并保持核心语义不变"
+    }
+  ],
+  "suggest": [
+    {
+      "question_type": "suggest_title",
+      "description": "取一个合适的标题，同时兼顾重点与创新点"
+    },
+    {
+      "question_type": "suggest_strategy",
+      "description": "提供一个可行策略"
+    },
+    {
+      "question_type": "suggest_process",
+      "description": "提供一个可执行的步骤方案"
+    }
+  ],
+  "identity": [
+    {
+      "question_type": "identity_subject",
+      "description": "明确当前主体"
+    },
+    {
+      "question_type": "identity_difficult",
+      "description": "梳理当前困难点与挑战"
+    },
+    {
+      "question_type": "identity_topic",
+      "description": "分析当前主题与涉及领域"
+    }
+  ],
+  "summarize": [
+    {
+      "question_type": "summarize_text_in_one_word",
+      "description": "一句话总结文本"
+    },
+    {
+      "question_type": "summarize_text_simple",
+      "description": "总结文本，尽量简洁"
+    },
+    {
+      "question_type": "summarize_text",
+      "description": "总结文本"
+    }
+  ],
+  "find": [
+    {
+      "question_type": "find_number",
+      "description": "找到关注数字"
+    },
+    {
+      "question_type": "find_text",
+      "description": "找到目标文字或段落"
+    },
+    {
+      "question_type": "find_key_issues",
+      "description": "找到关键问题或关键手段"
+    }
+  ],
+  "name": [
+    {
+      "question_type": "name_proper_noun",
+      "description": "请给出最有可能对应的专有名词和对应的英文"
+    }
+  ]
+}
