@@ -1,42 +1,40 @@
 import os
-import json
 import matplotlib.pyplot as plt
 from collections import defaultdict
+import mplcursors
+import matplotlib as mpl
 
-# 配置路径和数据结构
-folder_path = "your_folder_path"  # 替换为您的文件夹路径
+# 配置路径
+folder_path = "/path/to/your/folder"
+output_path = "/output/double_ring_chart.png"
+mpl.use('Agg')  # 无头模式
+
+# 数据统计 (保持不变)
 data = defaultdict(lambda: defaultdict(int))
 major_counts = defaultdict(int)
+total_count = 0
 
-# 遍历文件夹结构
 for entry in os.scandir(folder_path):
     if entry.is_dir():
-        # 提取大小类别信息
         folder_name = entry.name
         parts = folder_name.split('_')
         major_class = parts[0] if parts else "Unknown"
         minor_class = folder_name
         
-        # 统计JSON文件数量
-        json_count = 0
-        for file in os.scandir(entry.path):
-            if file.is_file() and file.name.endswith('.json'):
-                json_count += 1
+        json_count = sum(1 for f in os.scandir(entry.path) 
+                        if f.is_file() and f.name.lower().endswith('.json'))
         
-        # 存储统计结果
         data[major_class][minor_class] = json_count
         major_counts[major_class] += json_count
+        total_count += json_count
 
-# 准备内层(大类别)数据
+# 准备数据
 major_labels = list(major_counts.keys())
 major_sizes = list(major_counts.values())
-
-# 准备外层(小类别)数据
 minor_labels = []
 minor_sizes = []
 minor_colors = []
 
-# 创建颜色映射
 cmap = plt.get_cmap('tab20')
 for i, major in enumerate(major_labels):
     color = cmap(i / len(major_labels))
@@ -45,28 +43,65 @@ for i, major in enumerate(major_labels):
         minor_sizes.append(size)
         minor_colors.append(color)
 
+# 创建图形
+plt.figure(figsize=(16, 10), dpi=150)
 
-plt.figure(figsize=(12, 8), dpi=100)
-
-# 内层扇形图（大类别）
-plt.pie(major_sizes, labels=major_labels, autopct='%1.1f%%',
-        radius=0.5, colors=[cmap(i/len(major_labels)) for i in range(len(major_labels))],
+# 内环
+plt.pie(major_sizes, 
+        labels=major_labels, 
+        autopct=lambda pct: f'{pct:.1f}%\n({int(pct/100*total_count)})',
+        radius=0.5,
+        colors=[cmap(i/len(major_labels)) for i in range(len(major_labels))],
         wedgeprops=dict(width=0.2, edgecolor='w'),
-        textprops={'fontsize': 9, 'weight': 'bold'})
+        textprops={'fontsize': 10, 'fontweight': 'bold'},
+        pctdistance=0.8)
 
-# 外层扇形图（小类别）
-plt.pie(minor_sizes, labels=minor_labels, labeldistance=0.8,
+# 外环 - 带智能过滤
+def filter_labels(labels, sizes, threshold=0.005):
+    total = sum(sizes)
+    return [label if (size/total) >= threshold else "" for label, size in zip(labels, sizes)]
+
+minor_display_labels = filter_labels(minor_labels, minor_sizes, 0.01)
+
+plt.pie(minor_sizes, 
+        labels=minor_display_labels,
+        labeldistance=0.85,
         colors=minor_colors,
-        radius=0.7, wedgeprops=dict(width=0.2, edgecolor='w'),
-        textprops={'fontsize': 7},
-        rotatelabels=True, pctdistance=0.8)
+        radius=0.7, 
+        wedgeprops=dict(width=0.2, edgecolor='w'),
+        textprops={'fontsize': 8, 'fontweight': 'bold', 'color': 'white'},
+        rotatelabels=True,
+        pctdistance=0.85)
 
-# 添加中心空白区域创建环形效果
-centre_circle = plt.Circle((0,0), 0.3, fc='white')
-plt.gca().add_artist(centre_circle)
+# 图例
+from matplotlib.lines import Line2D
+legend_elements = [
+    Line2D([0], [0], marker='s', color='w', 
+           label=f'{label} ({size})', 
+           markerfacecolor=color, markersize=12)
+    for label, size, color in zip(minor_labels, minor_sizes, minor_colors)
+    if size/total_count > 0.005
+]
 
-# 添加标题和图例
+plt.legend(handles=legend_elements, 
+           loc='center left', 
+           bbox_to_anchor=(1.05, 0.5),
+           title="小类别详情",
+           fontsize=9,
+           framealpha=0.8,
+           ncol=2)
+
+# 中心空白
+plt.gca().add_artist(plt.Circle((0,0), 0.3, fc='white'))
 plt.title('文件夹类别分布\n内环: 大类别 | 外环: 小类别', fontsize=14, pad=20)
 plt.axis('equal')
-plt.tight_layout()
-plt.show()
+
+# 添加总计数
+plt.text(0, 0, f"总计\n{total_count}个文件", 
+         ha='center', va='center', fontsize=12, fontweight='bold')
+
+# 保存图片
+plt.savefig(output_path, bbox_inches='tight', dpi=300)
+plt.close()
+
+print(f"优化后的图表已保存至: {output_path}")
