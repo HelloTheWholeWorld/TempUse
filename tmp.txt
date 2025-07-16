@@ -1,89 +1,10 @@
-# eval_chat_1b.py
-import torch
-from opencompass.datasets import gsm8k, ceval, humaneval, mmlu
-from opencompass.models import HuggingFaceCausalLM
-from opencompass import TextDataset, OpenCompass
-from opencompass.utils import get_logger
-
-# 设置日志级别
-get_logger().setLevel('INFO')
-
-# 定义对话模板
-DEFAULT_SYSTEM = "You are a helpful assistant."
-def chat_template(qa_pairs):
-    prompt = ""
-    for q, a in qa_pairs:
-        prompt += f"<|user|>\n{q}</s>\n<|assistant|>\n"
-        if a is not None:
-            prompt += f"{a}</s>"
-    return prompt
-
-# 加载模型
-model = HuggingFaceCausalLM(
-    path="olmo_sft_output_34",
-    tokenizer_path="olmo_sft_output_34",
-    max_seq_len=2048,
-    tokenizer_kwargs={"padding_side": "left"},
-    batch_padding=True,
-    batch_size=8,
-    device_map="auto",
-    torch_dtype=torch.bfloat16,
-    system=DEFAULT_SYSTEM,
-    chat_template=chat_template
-)
-
-# 准备数据集
-datasets = [
-    gsm8k.GSM8KDataset(path='gsm8k'),
-    ceval.CEvalDataset(path='ceval'),
-    humaneval.HumanEvalDataset(path='humaneval'),
-    mmlu.MMLUDataset(path='mmlu')
-]
-
-# ============== 评测部分 ===============
-# 配置OpenCompass评测器
-evaluator = OpenCompass(
-    model=model,
-    datasets=datasets,
-    metrics={
-        'gsm8k': ['accuracy'],
-        'ceval': ['accuracy'],
-        'humaneval': ['pass@1', 'pass@10'],
-        'mmlu': ['accuracy']
-    },
-    summary_report={
-        'title': 'OLMo-SFT-34b Evaluation Report',
-        'metrics': ['accuracy', 'pass@1'],
-        'group_by': 'dataset'
-    },
-    runner=dict(
-        num_gpus=8,       # 使用8个GPU
-        num_procs=8,      # 使用8个进程
-        max_workers=64,   # 最大工作线程
-        # Triton服务器配置（如使用）
-        triton_server={
-            'url': 'localhost:8001',
-            'model_name': 'olmo_sft_34b',
-            'version': '1.0'
-        },
-        # 覆盖警告的Triton版本
-        compatibility={
-            'triton': '2.2.0'
-        }
-    )
-)
-
-if __name__ == "__main__":
-    # 运行评估
-    results = evaluator.run()
-    
-    # 打印评估结果
-    print("\n\n=========== FINAL EVALUATION RESULTS ===========")
-    for dataset_name, metrics in results.items():
-        print(f"\n----- {dataset_name.upper()} -----")
-        for metric, value in metrics.items():
-            print(f"{metric}: {value:.4f}")
-    
-    # 生成详细报告
-    evaluator.generate_report(output_path='./eval_results')
-    print("\nEvaluation report saved to: ./eval_results")
+{
+    "chat_template": "{% for message in messages %}{% if message['role'] == 'user' %}<|user|>\n{{ message['content'] }}</s>\n<|assistant|>\n{% else %}{{ message['content'] }}</s>{% endif %}{% endfor %}",
+    "bos_token": "<s>",
+    "eos_token": "</s>",
+    "tokenizer_class": "LlamaTokenizer",
+    "special_tokens_map": {
+        "<|user|>": {"content": "<|user|>", "lstrip": true, "normalized": false, "rstrip": false, "single_word": false},
+        "<|assistant|>": {"content": "<|assistant|>", "lstrip": true, "normalized": false, "rstrip": false, "single_word": false}
+    }
+}
