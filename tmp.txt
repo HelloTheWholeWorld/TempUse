@@ -1,162 +1,41 @@
-{# prompt.jinja2 #}
-{%- set subjects = ["推进系统", "结构设计", "制导导航与控制", "热控制系统", "通信系统", 
-                  "有效载荷", "轨道任务设计", "能源管理", "可靠性工程", "项目管理"] -%}
-{%- set question_types = {
-    "解释型": "解释XX现象/技术原理的原因和机制",
-    "比较型": "对比分析两种方案的优缺点或适用场景",
-    "因果推断型": "推断XX故障的可能原因链",
-    "评价型": "评估特定设计选择的技术经济性",
-    "设计挑战型": "在约束条件下设计解决方案",
-    "故障诊断型": "诊断系统故障并提出应对策略",
-    "公式推导型": "推导特定物理过程的数学模型"
-} -%}
-{%- set cognitive_levels = ["应用", "分析", "综合", "评价"] -%}
+from pathlib import Path
 
-### 任务说明
-您是一名航天工程专家，需要基于用户提供的技术文档生成高质量的考察性问题，要求：
-1. 禁止生成事实性/记忆性问题（如“某参数值是多少”）
-2. 问题必须属于以下复杂类型：{{ question_types|keys|join('、') }}
-3. 问题必须归属于明确的航天子领域：{{ subjects|join('、') }}
-4. 每个问题应具有足够的深度，考察{{ cognitive_levels|join('、') }}层级认知能力
-5. 问题需基于文档内容可解答，且不包含“根据前文”等引用措辞
+def read_md_files_from_auto(dir_path):
+    """
+    读取指定目录下所有auto文件夹中的md文件
+    
+    参数:
+        dir_path (str): 根目录路径
+    """
+    base_path = Path(dir_path)
+    
+    # 验证目录是否存在
+    if not base_path.exists() or not base_path.is_dir():
+        raise FileNotFoundError(f"目录不存在: {dir_path}")
+    
+    # 遍历所有子目录
+    for child_dir in base_path.iterdir():
+        if child_dir.is_dir():
+            auto_dir = child_dir / 'auto'
+            
+            # 检查auto目录是否存在
+            if auto_dir.exists() and auto_dir.is_dir():
+                print(f"\n\033[1;34m处理目录: {child_dir.name}\033[0m")
+                
+                # 读取所有md文件
+                for md_file in auto_dir.glob('*.md'):
+                    try:
+                        # 读取文件内容
+                        with md_file.open('r', encoding='utf-8') as f:
+                            content = f.read()
+                            print(f"  \033[32m✓ 已读取: {md_file.name}\033[0m")
+                            print(f"    内容预览: {content[:50]}...")  # 显示前50字符
+                    except Exception as e:
+                        print(f"  \033[31m× 读取失败 {md_file.name}: {str(e)}\033[0m")
+            else:
+                print(f"  \033[33m! 缺少auto目录: {child_dir}\033[0m")
 
-### 技术文档
-<DOCUMENT_START>
-{{ document_text }}
-<DOCUMENT_END>
-
-### 问题生成要求
-1. 生成数量：5个独立问题
-2. 问题格式：
-   - 学科分类：从指定子领域中精确选择
-   - 问题类型：从指定问题类型中选择
-   - 问题文本：清晰完整的技术问题（70-150字）
-3. 重点方向（至少覆盖3项）：
-   ▢ 涉及跨子系统耦合（如热控与电源系统交互）
-   ▢ 包含工程技术权衡（性能/成本/可靠性）
-   ▢ 包含故障场景推演
-   ▢ 要求数学建模/公式推导
-
-### 输出格式（JSON）
-{
-  "questions": [
-    {
-      "subject": "精确的子领域名称",
-      "type": "问题类型名称",
-      "question": "完整的问题描述文本",
-      "key_points": ["文档涉及的关键技术点1", "技术点2"]
-    }
-  ]
-}
-
-
-import json
-from jinja2 import Template
-from openai import OpenAI
-
-# 加载模板和文档
-with open("prompt.jinja2") as f:
-    template = Template(f.read())
-with open("space_paper.md") as doc:
-    document_text = doc.read()
-
-# 渲染提示词
-prompt = template.render(document_text=document_text)
-
-# 调用LLM（示例使用OpenAI）
-client = OpenAI(api_key="YOUR_KEY")
-response = client.chat.completions.create(
-    model="gpt-4-turbo",
-    messages=[{"role": "user", "content": prompt}],
-    response_format={"type": "json_object"},
-    temperature=0.3
-)
-
-# 解析输出
-try:
-    questions = json.loads(response.choices[0].message.content)["questions"]
-    for i, q in enumerate(questions):
-        print(f"Q{i+1} [{q['subject']}-{q['type']}]: {q['question']}")
-        print(f"关键技术点：{', '.join(q['key_points'])}\n")
-except json.JSONDecodeError:
-    print("解析错误，原始响应：", response.choices[0].message.content)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-### 任务说明
-您作为航天工程专家，需基于技术文档生成**高认知难度**的问题，需满足：
-1. **难度优先**：问题需满足以下至少2项难度特征：
-   - 需≥3步逻辑推理或数学推导（如轨道优化中的多目标决策链）
-   - 涉及≥2个学科交叉（如热控+结构+能源的耦合分析）
-   - 包含隐含约束条件（如“在推进剂泄漏10%时重新设计轨道”）
-   - 需抽象建模能力（如将故障现象转化为微分方程）
-2. **独立可答**：问题自含所有前提，禁用“根据前文”等引用措辞
-3. **学科深度**：必须关联航天核心领域（推进、GNC、热控等）
-
-### 技术文档
-<DOCUMENT_START>
-{{ document_text }}
-<DOCUMENT_END>
-
-### 生成规则
-1. **生成数量**：3个问题（优先质量而非数量）
-2. **难度自评**：对每个问题按以下维度评分（1-10分）：
-   | 维度                | 说明                                  |
-   |---------------------|---------------------------------------|
-   | 思维链长度          | 推理步骤数量与复杂性                  |
-   | 抽象层级            | 从现象→原理→模型的跃迁深度          |
-   | 知识点密度          | 需调用的核心概念/公式数量             |
-   | 跨域耦合度          | 子系统交互的复杂性                    |
-3. **问题结构**：
-   ```json
-   {
-     "questions": [
-       {
-         "question": "问题文本（100-200字）",
-         "difficulty_scores": {"思维链长度":x, "抽象层级":y, ...}, // 总分=Σ维度分
-         "anchor_points": ["文档关键片段1", "片段2"], // 答案必基于此
-         "confusing_factors": ["隐含条件1", "易混淆点2"] // 增加难度的设计
-       }
-     ]
-   }
-
-
-
-
-
-
-
-import jinja2
-import json
-from openai import OpenAI
-
-# 渲染提示词
-template = jinja2.Template(open('prompt_v2.jinja2').read())
-prompt = template.render(document_text=paper_text)
-
-# 调用LLM（示例：GPT-4 Turbo）
-client = OpenAI(api_key="YOUR_KEY")
-response = client.chat.completions.create(
-    model="gpt-4-turbo",
-    messages=[{"role": "user", "content": prompt}],
-    response_format={"type": "json_object"},
-    temperature=0.2  # 低随机性保证问题严谨性
-)
-
-# 难度过滤
-questions = json.loads(response.choices[0].message.content)["questions"]
-hard_questions = [q for q in questions if sum(q['difficulty_scores'].values()) >= 30]
-
-
+# 使用示例
+if __name__ == "__main__":
+    target_dir = "/path/to/your/directory"  # 替换为实际路径
+    read_md_files_from_auto(target_dir)
