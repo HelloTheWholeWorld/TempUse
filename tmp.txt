@@ -1,17 +1,17 @@
 import json
 import re
+import sys
 
 def parse_llm_output(output_str):
-    # 分割问题部分（使用正则容许多余空格和格式变化）
-    question_sections = re.split(r'-----问题\d+\s*', output_str)[1:]  # 丢弃首部空匹配
-    
+    """解析LLM输出的问题字符串"""
+    question_sections = re.split(r'-----问题\d+\s*', output_str)[1:]
     questions = []
-    for i, section in enumerate(question_sections, 1):
+    
+    for i, section in enumerate(question_sections):
         try:
-            # 容错处理：移除首尾空白和结尾逗号
             section = section.strip().rstrip(',')
             
-            # 使用宽松正则匹配各字段
+            # 解析各字段
             question_match = re.search(r'"question":\s*"((?:[^"\\]|\\.)*)"', section)
             scores_match = re.search(r'"difficulty_scores":\s*(\{.*?\})', section, re.DOTALL)
             anchors_match = re.search(r'"anchor_points":\s*($$.*?$$)', section, re.DOTALL)
@@ -22,40 +22,52 @@ def parse_llm_output(output_str):
             anchor_points = json.loads(anchors_match.group(1)) if anchors_match else []
             
             questions.append({
-                "question_id": i,
                 "question_text": question_text,
                 "difficulty_scores": difficulty_scores,
                 "anchor_points": anchor_points
             })
             
         except Exception as e:
-            print(f"解析问题{i}时出错: {str(e)}")
+            print(f"解析问题出错: {str(e)}", file=sys.stderr)
             questions.append({
-                "question_id": i,
                 "error": f"解析失败: {str(e)}",
-                "raw_section": section[:200] + '...'  # 保留原始数据片段
+                "raw_section": section[:200] + '...' if section else ""
             })
     
     return questions
 
-# 示例使用
+def process_json_file(input_file, output_file):
+    """处理JSON文件并输出结果"""
+    try:
+        with open(input_file, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        
+        all_questions = []
+        
+        # 处理每个output项
+        for item in data:
+            if 'output' in item:
+                parsed_questions = parse_llm_output(item['output'])
+                all_questions.extend(parsed_questions)
+        
+        # 写入输出文件
+        with open(output_file, 'w', encoding='utf-8') as f:
+            json.dump(all_questions, f, ensure_ascii=False, indent=4)
+        
+        print(f"成功处理并输出到: {output_file}")
+        return True
+    
+    except FileNotFoundError:
+        print(f"错误：文件未找到 - {input_file}", file=sys.stderr)
+    except json.JSONDecodeError as e:
+        print(f"JSON解析错误: {str(e)}", file=sys.stderr)
+    except Exception as e:
+        print(f"处理失败: {str(e)}", file=sys.stderr)
+    
+    return False
+
+# 使用示例
 if __name__ == "__main__":
-    output_example = """
-"output": "-----问题1  
-\"question\": \"在同步短码4,5.4/6信号盲解扩中...最大迭代次数设为100）进行推导。\",  
-\"difficulty_scores\": {\"思维链长度\":9, \"抽象层级\":8, \"知识点密度\":7, \"跨域耦合度\":6},  
-\"anchor_points\": [\"信号协方差矩阵特征分解\", \"12,3算法迭代过程\"]  
-
------问题2  
-\"question\": \"针对存在频率估计误差的非合作场景...误码率≤10⁻³的工程要求。\",  
-\"difficulty_scores\": {\"思维链长度\":8, \"抽象层级\":7, \"知识点密度\":8, \"跨域耦合度\":5},  
-\"anchor_points\": [\"频率估计误差模型\", \"特征分解矩阵相位扰动\"]  
-
------问题3  
-\"question\": \"设计一种在卫星热控系统约束下的...Δv_max=120m/s的轨道控制精度要求。\",  
-\"difficulty_scores\": {\"思维链长度\":10, \"抽象层级\":9, \"知识点密度\":8, \"跨域耦合度\":9},  
-\"anchor_points\": [\"热控系统温度响应模型\", \"轨道控制精度约束\"]"
-"""
-
-    parsed_data = parse_llm_output(output_example)
-    print(json.dumps(parsed_data, ensure_ascii=False, indent=2))
+    input_json = "input.json"  # 输入JSON文件路径
+    output_json = "output.json"  # 输出JSON文件路径
+    process_json_file(input_json, output_json)
