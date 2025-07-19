@@ -2,42 +2,26 @@ import json
 import re
 import sys
 
-def parse_llm_output(output_str):
-    """解析LLM输出的问题字符串"""
-    question_sections = re.split(r'-----问题\d+\s*', output_str)[1:]
-    questions = []
+def extract_questions(output_str):
+    """从输出字符串中提取所有问题文本"""
+    # 匹配所有"question"字段的正则表达式
+    pattern = r'"question":\s*"((?:[^"\\]|\\.)*)"'
+    matches = re.findall(pattern, output_str, re.DOTALL)
     
-    for i, section in enumerate(question_sections):
+    questions = []
+    for match in matches:
         try:
-            section = section.strip().rstrip(',')
-            
-            # 解析各字段
-            question_match = re.search(r'"question":\s*"((?:[^"\\]|\\.)*)"', section)
-            scores_match = re.search(r'"difficulty_scores":\s*(\{.*?\})', section, re.DOTALL)
-            anchors_match = re.search(r'"anchor_points":\s*($$.*?$$)', section, re.DOTALL)
-            
-            # 安全解析JSON字段
-            question_text = json.loads('"' + question_match.group(1) + '"') if question_match else None
-            difficulty_scores = json.loads(scores_match.group(1)) if scores_match else {}
-            anchor_points = json.loads(anchors_match.group(1)) if anchors_match else []
-            
-            questions.append({
-                "question_text": question_text,
-                "difficulty_scores": difficulty_scores,
-                "anchor_points": anchor_points
-            })
-            
+            # 处理转义字符并提取问题文本
+            question_text = json.loads(f'"{match}"')
+            questions.append(question_text)
         except Exception as e:
-            print(f"解析问题出错: {str(e)}", file=sys.stderr)
-            questions.append({
-                "error": f"解析失败: {str(e)}",
-                "raw_section": section[:200] + '...' if section else ""
-            })
+            print(f"处理问题文本时出错: {str(e)}", file=sys.stderr)
+            questions.append(match)  # 保留原始文本
     
     return questions
 
 def process_json_file(input_file, output_file):
-    """处理JSON文件并输出结果"""
+    """处理JSON文件并输出问题列表"""
     try:
         with open(input_file, 'r', encoding='utf-8') as f:
             data = json.load(f)
@@ -47,14 +31,14 @@ def process_json_file(input_file, output_file):
         # 处理每个output项
         for item in data:
             if 'output' in item:
-                parsed_questions = parse_llm_output(item['output'])
-                all_questions.extend(parsed_questions)
+                questions = extract_questions(item['output'])
+                all_questions.extend(questions)
         
         # 写入输出文件
         with open(output_file, 'w', encoding='utf-8') as f:
-            json.dump(all_questions, f, ensure_ascii=False, indent=4)
+            json.dump(all_questions, f, ensure_ascii=False, indent=2)
         
-        print(f"成功处理并输出到: {output_file}")
+        print(f"成功提取{len(all_questions)}个问题并保存到: {output_file}")
         return True
     
     except FileNotFoundError:
@@ -69,5 +53,5 @@ def process_json_file(input_file, output_file):
 # 使用示例
 if __name__ == "__main__":
     input_json = "input.json"  # 输入JSON文件路径
-    output_json = "output.json"  # 输出JSON文件路径
+    output_json = "questions.json"  # 输出JSON文件路径
     process_json_file(input_json, output_json)
