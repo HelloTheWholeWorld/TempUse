@@ -1,57 +1,67 @@
 import json
 import re
-import sys
 
-def extract_questions(output_str):
-    """从输出字符串中提取所有问题文本"""
-    # 匹配所有"question"字段的正则表达式
-    pattern = r'"question":\s*"((?:[^"\\]|\\.)*)"'
-    matches = re.findall(pattern, output_str, re.DOTALL)
+def parse_model_output(output_str):
+    """
+    解析大模型的输出，兼容两种格式：
+    1. 纯JSON字符串：{"question": "...", ...}
+    2. Markdown包裹：```json{...}``` 或 ```JSON{...}```
     
-    questions = []
-    for match in matches:
-        try:
-            # 处理转义字符并提取问题文本
-            question_text = json.loads(f'"{match}"')
-            questions.append(question_text)
-        except Exception as e:
-            print(f"处理问题文本时出错: {str(e)}", file=sys.stderr)
-            questions.append(match)  # 保留原始文本
-    
-    return questions
-
-def process_json_file(input_file, output_file):
-    """处理JSON文件并输出问题列表"""
+    Args:
+        output_str: 模型输出的字符串
+        
+    Returns:
+        解析后的字典对象
+        
+    Raises:
+        ValueError: 当无法解析JSON时
+    """
+    # 情况1：尝试直接解析为JSON
     try:
-        with open(input_file, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-        
-        all_questions = []
-        
-        # 处理每个output项
-        for item in data:
-            if 'output' in item:
-                questions = extract_questions(item['output'])
-                all_questions.extend(questions)
-        
-        # 写入输出文件
-        with open(output_file, 'w', encoding='utf-8') as f:
-            json.dump(all_questions, f, ensure_ascii=False, indent=2)
-        
-        print(f"成功提取{len(all_questions)}个问题并保存到: {output_file}")
-        return True
+        return json.loads(output_str)
+    except json.JSONDecodeError:
+        pass
     
-    except FileNotFoundError:
-        print(f"错误：文件未找到 - {input_file}", file=sys.stderr)
-    except json.JSONDecodeError as e:
-        print(f"JSON解析错误: {str(e)}", file=sys.stderr)
-    except Exception as e:
-        print(f"处理失败: {str(e)}", file=sys.stderr)
+    # 情况2：处理Markdown代码块包裹的JSON
+    pattern = r'```(?:json)?\s*(\{[\s\S]*\})\s*```'
+    match = re.search(pattern, output_str, re.IGNORECASE)
     
-    return False
+    if match:
+        try:
+            json_str = match.group(1)
+            # 处理可能的转义问题
+            json_str = json_str.replace('\\"', '"')
+            return json.loads(json_str)
+        except json.JSONDecodeError:
+            pass
+    
+    # 如果两种格式都无法解析则抛出异常
+    raise ValueError("无法解析的格式:\n" + output_str)
 
-# 使用示例
-if __name__ == "__main__":
-    input_json = "input.json"  # 输入JSON文件路径
-    output_json = "questions.json"  # 输出JSON文件路径
-    process_json_file(input_json, output_json)
+# 使用示例 ----------------------------------------------------
+# 示例1: 直接JSON格式
+output_direct = """
+{
+  "question": "根据文中内容，初始位置误差修正方法基于什么原理？",
+  "choices_A": "轨道积分法",
+  "choices_B": "微分修正法",
+  "choices_C": "线性插值法",
+  "choices_D": "神经网络法",
+  "answer": "B",
+  "anchor_points": "基于轨道微分修正法对初始位置误差进行修正..."
+}
+"""
+
+# 示例2: Markdown包裹格式
+output_markdown = """
+以下是问题描述：
+```json
+{
+  "question": "论文中初始位置误差的修正精度是多少？",
+  "choices_A": "0.1%",
+  "choices_B": "0.5%",
+  "choices_C": "1.0%",
+  "choices_D": "2.0%",
+  "answer": "B",
+  "anchor_points": "通过实验得出初始位置误差可修正至0.5%以内..."
+}
